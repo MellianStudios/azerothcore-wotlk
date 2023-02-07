@@ -21,6 +21,7 @@
 #include "SmartAI.h"
 #include "SpellMgr.h"
 #include "UnitAI.h"
+#include "smallfolk.h"
 
 namespace
 {
@@ -44,9 +45,11 @@ struct TSpellSummary
 
 ScriptMgr::ScriptMgr()
     : _scriptCount(0),
-    _scheduledScripts(0),
-    _script_loader_callback(nullptr),
-    _modules_loader_callback(nullptr) { }
+      _aioHandlers(nullptr),
+      _scheduledScripts(0),
+      _script_loader_callback(nullptr),
+      _modules_loader_callback(nullptr)
+{}
 
 ScriptMgr::~ScriptMgr() { }
 
@@ -60,6 +63,8 @@ void ScriptMgr::Initialize()
 {
     LOG_INFO("server.loading", "> Loading C++ scripts");
     LOG_INFO("server.loading", " ");
+
+    _aioHandlers = new AIOHandlers();
 
     AddSC_SmartScripts();
 
@@ -121,6 +126,7 @@ void ScriptMgr::Unload()
     SCR_CLEAR<WorldMapScript>();
     SCR_CLEAR<WorldObjectScript>();
     SCR_CLEAR<WorldScript>();
+    SCR_CLEAR<AIOScript>();
 
     delete[] SpellSummary;
 }
@@ -603,6 +609,241 @@ AllGameObjectScript::AllGameObjectScript(const char* name) : ScriptObject(name)
     ScriptRegistry<AllGameObjectScript>::AddScript(this);
 }
 
+AIOScript::AIOScriptByKeyMap AIOScript::_scriptByKeyMap = AIOScript::AIOScriptByKeyMap();
+
+void ScriptMgr::OnAddonMessage(Player *sender, const std::string &message)
+{
+    if (!sender) {
+        return;
+    }
+
+    LuaVal mainTable = LuaVal::loads(message);
+
+    if (!mainTable.istable()) { //Unable to parse or incorrect format
+        return;
+    }
+
+    //Call handlers from all blocks in order
+    for (size_t i = 1; i <= mainTable.tbl().size(); ++i) {
+        LuaVal &block = mainTable[1];
+
+        if (!block.istable()) {
+            continue;
+        }
+
+        LuaVal &scriptKeyVal = block[2];
+        LuaVal &handlerKeyVal = block[3];
+
+        if (!block[1].isnumber() || scriptKeyVal.isnil() || handlerKeyVal.isnil()) {
+            continue;
+        }
+
+        if (AIOScript *aioScript = _aioHandlers->GetScript<AIOScript>(scriptKeyVal)) {
+            aioScript->OnHandle(sender, handlerKeyVal, block);
+        }
+    }
+}
+
+AIOScript::AIOScript(const LuaVal &scriptKey) : ScriptObject(scriptKey.tostring().c_str()), _key(scriptKey)
+{
+    if (AIOScript::_scriptByKeyMap.find(scriptKey) != AIOScript::_scriptByKeyMap.end()) {
+        sLog->outAIOMessage(
+            0,
+            LOG_LEVEL_FATAL,
+            "AIO scriptKey '%s' of type tag '%i' already exist. Use another key.",
+            scriptKey.tostring().c_str(),
+            scriptKey.typetag()
+        );
+
+        ASSERT(false);
+    }
+
+    ScriptRegistry<AIOScript>::AddScript(this);
+    AIOScript::_scriptByKeyMap[scriptKey] = this;
+}
+
+void AIOScript::AddInitArgs(
+    const LuaVal &scriptKey,
+    const LuaVal &handlerKey,
+    ArgFunc a1,
+    ArgFunc a2,
+    ArgFunc a3,
+    ArgFunc a4,
+    ArgFunc a5,
+    ArgFunc a6
+)
+{
+    AIOHandlers *handler = sScriptMgr->_aioHandlers;
+
+    if (!handler) {
+        return;
+    }
+
+    //Look for hook
+    std::list<ArgFunc> *list = 0;
+
+    for (auto &itr: handler->_initHookList) {
+        if (itr.scriptKey == scriptKey && itr.handlerKey == handlerKey) {
+            list = &itr.argsList;
+            break;
+
+        }
+    }
+
+    //Add hook
+    if (!list) {
+        handler->_initHookList.push_back(AIOHandlers::InitHookInfo(scriptKey, handlerKey));
+        list = &handler->_initHookList.back().argsList;
+    }
+
+    //Add args
+    if (a1) {
+        list->push_back(a1);
+    }
+
+    if (a2) {
+        list->push_back(a2);
+    }
+
+    if (a3) {
+        list->push_back(a3);
+    }
+
+    if (a4) {
+        list->push_back(a4);
+    }
+
+    if (a5) {
+        list->push_back(a5);
+    }
+
+    if (a6) {
+        list->push_back(a6);
+    }
+}
+
+template<>
+AIOScript *AIOScript::GetScript(const LuaVal &scriptKey)
+{
+    AIOScriptByKeyMap::const_iterator itr = AIOScript::_scriptByKeyMap.find(scriptKey);
+
+    if (itr == AIOScript::_scriptByKeyMap.end()) {
+        return 0;
+    }
+
+    return itr->second;
+}
+
+template<class ScriptClass>
+ScriptClass *AIOScript::GetScript(const LuaVal &scriptKey)
+{
+    AIOScriptByKeyMap::const_iterator itr = AIOScript::_scriptByKeyMap.find(scriptKey);
+
+    if (itr == AIOScript::_scriptByKeyMap.end()) {
+        return 0;
+    }
+
+    return dynamic_cast<ScriptClass *>(itr->second);
+}
+
+void AIOScript::OnHandle(Player *sender, const LuaVal &handlerKey, const LuaVal &args)
+{
+    HandlerMapType::const_iterator itr = _handlerMap.find(handlerKey);
+
+    if (itr != _handlerMap.end()) {
+        itr->second(sender, args); //Call the handler function
+    }
+}
+
+AIOHandlers::AIOHandlers() : AIOScript("AIO")
+{
+    AddHandler("Init", std::bind(&AIOHandlers::HandleInit, this, std::placeholders::_1, std::placeholders::_2));
+    AddHandler("Error", std::bind(&AIOHandlers::HandleError, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void AIOHandlers::HandleInit(Player *sender, const LuaVal &args)
+{
+    //Init hasn't cooled down
+    if (sender->isAIOInitOnCooldown()) {
+        return;
+    }
+
+    sender->setAIOIntOnCooldown(true);
+    const LuaVal &versionVal = args[4];
+    const LuaVal &clientDataVal = args[5];
+
+    if (!versionVal.isnumber() || !clientDataVal.istable()) {
+        sLog->outAIOMessage(
+            sender->GetGUID().GetCounter(),
+            LOG_LEVEL_ERROR,
+            "AIOHandlers::HandleInit: Invalid version value or clientData value. Sender: %s, Args: %s",
+            sender->GetName().c_str(),
+            args.dumps().c_str()
+        );
+        return;
+    }
+
+    if (versionVal.num() != AIO_VERSION) {
+        sender->AIOHandle("AIO", "Init", AIO_VERSION);
+
+        return;
+    }
+
+    LuaVal addonTable(TTABLE);
+    LuaVal cacheTable(TTABLE);
+    uint32 nAddons = sWorld->PrepareClientAddons(clientDataVal, addonTable, cacheTable, sender);
+
+    LuaVal argsToSend(TTABLE);
+
+    uint32 blockIndex = 1;
+
+    for (HookListType::const_iterator itr = _initHookList.begin(); itr != _initHookList.end(); ++itr) {
+        uint32 index = 3;
+        LuaVal HookBlock(TTABLE);
+
+        HookBlock[1] = (uint32) itr->argsList.size() + 1;
+        HookBlock[2] = itr->scriptKey;
+        HookBlock[3] = itr->handlerKey;
+
+        for (const auto &it: itr->argsList) {
+            HookBlock[++index] = it(sender);
+        }
+
+        argsToSend[++blockIndex] = HookBlock;
+    }
+
+    LuaVal AIOInitBlock(TTABLE);
+    AIOInitBlock[1] = 5;
+    AIOInitBlock[2] = "AIO";
+    AIOInitBlock[3] = "Init";
+    AIOInitBlock[4] = AIO_VERSION;
+    AIOInitBlock[5] = nAddons;
+    AIOInitBlock[6] = addonTable;
+    AIOInitBlock[7] = cacheTable;
+
+    argsToSend[1] = AIOInitBlock;
+    sender->SendSimpleAIOMessage(argsToSend.dumps());
+
+    sender->m_aioInitialized = true;
+}
+
+void AIOHandlers::HandleError(Player *sender, const LuaVal &args)
+{
+    const LuaVal &msgVal = args[4];
+
+    if (!msgVal.isstring()) {
+        return;
+    }
+
+    sLog->outAIOMessage(
+        sender->GetGUID().GetCounter(),
+        LOG_LEVEL_ERROR,
+        "%s Received client addon error: %s",
+        sender->GetSession()->GetPlayerInfo().c_str(),
+        msgVal.str().c_str()
+    );
+}
+
 // Specialize for each script type class like so:
 template class AC_GAME_API ScriptRegistry<AccountScript>;
 template class AC_GAME_API ScriptRegistry<AchievementCriteriaScript>;
@@ -650,3 +891,4 @@ template class AC_GAME_API ScriptRegistry<WeatherScript>;
 template class AC_GAME_API ScriptRegistry<WorldMapScript>;
 template class AC_GAME_API ScriptRegistry<WorldObjectScript>;
 template class AC_GAME_API ScriptRegistry<WorldScript>;
+template class AC_GAME_API ScriptRegistry<AIOScript>;

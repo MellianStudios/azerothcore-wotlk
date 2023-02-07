@@ -95,6 +95,8 @@
 #include "WorldSession.h"
 #include <boost/asio/ip/address.hpp>
 #include <cmath>
+#include <fstream>
+#include <boost/crc.hpp>
 
 namespace
 {
@@ -1400,6 +1402,16 @@ void World::LoadConfigSettings(bool reload)
 
     _bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA]   = sConfigMgr->GetOption<bool>("Calculate.Creature.Zone.Area.Data", false);
     _bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetOption<bool>("Calculate.Gameoject.Zone.Area.Data", false);
+
+    // AIO Configs
+    _int_configs[CONFIG_AIO_MAXPARTS] = sConfigMgr->GetOption<int32>("AIO.MaxParts", 4);
+    _bool_configs[CONFIG_AIO_OBFUSCATE] = sConfigMgr->GetOption<bool>("AIO.Obfuscate", false);
+    _bool_configs[CONFIG_AIO_COMPRESS] = sConfigMgr->GetOption<bool>("AIO.Compress", false);
+    m_aioclientpath = sConfigMgr->GetOption<std::string>("AIO.ClientScriptPath", "lua_client_scripts");
+    m_aioprefix = sConfigMgr->GetOption<std::string>("AIO.Prefix", "AIO");
+    if (m_aioprefix.size() > 15) {
+        m_aioprefix = m_aioprefix.substr(0, 15);
+    }
 
     // Player can join LFG anywhere
     _bool_configs[CONFIG_LFG_LOCATION_ALL] = sConfigMgr->GetOption<bool>("LFG.Location.All", false);
@@ -3385,4 +3397,190 @@ CliCommandHolder::CliCommandHolder(void* callbackArg, char const* command, Print
 CliCommandHolder::~CliCommandHolder()
 {
     free(m_command);
+}
+
+
+bool World::AddAddon(const AIOAddon &addon)
+{
+    if (addon.file.empty()) {
+        return false;
+    }
+
+    //Check if addon already exist
+    for (auto &itr: m_AddonList) {
+        if (itr.name == addon.name) {
+            return false;
+        }
+    }
+
+    AIOAddon copy(addon);
+    copy.code = "";
+
+    //Format path
+    std::string path = sWorld->GetAIOClientScriptPath();
+
+    if (path.back() != '/' && path.back() != '\\') {
+        path += '/';
+    }
+
+    path += copy.file;
+
+    //Get file
+    std::ifstream in(path, std::ios::in | std::ios::binary);
+
+    if (in) {
+        in.seekg(0, std::ios::end);
+        copy.code.resize(in.tellg());
+        in.seekg(0, std::ios::beg);
+        in.read(&copy.code[0], copy.code.size());
+        in.close();
+
+        if (copy.code.empty()) {
+            return false;
+        }
+    } else {
+        sLog->outAIOMessage(
+            0,
+            LOG_LEVEL_ERROR,
+            "AIO AddAddon: Couldn't open file %s of addon %s",
+            path.c_str(),
+            copy.name.c_str()
+        );
+
+        return false;
+    }
+
+    //Set crc on original file content
+    boost::crc_32_type crc_result;
+    crc_result.process_bytes(copy.code.data(), copy.code.length());
+    copy.crc = crc_result.checksum();
+
+    //Process code
+    char compressPrefix = 'U';
+
+    if (sWorld->getBoolConfig(CONFIG_AIO_OBFUSCATE)) {
+        // NYI
+    }
+
+    if (sWorld->getBoolConfig(CONFIG_AIO_COMPRESS)) {
+        // NYI
+        //compressPrefix = 'C';
+    }
+
+    //Set final code and go
+    copy.code = std::string(1, compressPrefix) + copy.code;
+    m_AddonList.push_back(copy);
+
+    sLog->outAIOMessage(0, LOG_LEVEL_INFO, "AIO: Loaded addon %s from file %s", copy.name.c_str(), copy.file.c_str());
+
+    return true;
+}
+
+bool World::RemoveAddon(const std::string &addonName)
+{
+    for (auto itr = m_AddonList.begin(); itr != m_AddonList.end(); ++itr) {
+        if (itr->name == addonName) {
+            m_AddonList.erase(itr);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool World::ReloadAddons()
+{
+    sLog->outAIOMessage(0, LOG_LEVEL_INFO, "World::ReloadAddons()");
+
+    AddonCodeListType prevAddonList;
+    prevAddonList.swap(m_AddonList);
+
+    try {
+        for (AddonCodeListType::const_iterator itr = prevAddonList.begin(); itr != prevAddonList.end(); ++itr) {
+            AddAddon(*itr);
+        }
+    } catch (std::exception &e) {
+        sLog->outAIOMessage(0, LOG_LEVEL_ERROR, "AIO: Error reloading addons. Exception: %s", e.what());
+
+        m_AddonList.swap(prevAddonList);
+
+        return false;
+    } catch (...) {
+        sLog->outAIOMessage(0, LOG_LEVEL_ERROR, "AIO: Error reloading addons");
+
+        m_AddonList.swap(prevAddonList);
+
+        return false;
+    }
+
+    return true;
+}
+
+size_t World::PrepareClientAddons(
+    const LuaVal &clientData,
+    LuaVal &addonsTable,
+    LuaVal &cacheTable,
+    Player *forPlayer
+) const
+{
+    uint32 i = 0;
+
+    for (const auto &itr: m_AddonList) {
+        if (forPlayer->GetSession()->GetSecurity() < itr.accountType) {
+            continue;
+        }
+
+        const LuaVal &CRCVal = clientData[itr.name];
+
+        if (CRCVal == itr.crc) {
+            cacheTable[++i] = itr.name;
+        } else {
+            LuaVal addonData(TTABLE);
+            addonData["name"] = itr.name;
+            addonData["crc"] = itr.crc;
+            addonData["code"] = itr.code;
+            addonsTable[++i] = addonData;
+        }
+    }
+
+    return i;
+}
+
+void World::ForceReloadPlayerAddons(const AccountTypes type)
+{
+    for (auto m_session: _sessions) {
+        if (m_session.second->GetPlayer() && m_session.second->GetSecurity() >= type) {
+            m_session.second->GetPlayer()->ForceReloadAddons();
+        }
+    }
+}
+
+void World::ForceResetPlayerAddons(const AccountTypes type)
+{
+    for (auto m_session: _sessions) {
+        if (m_session.second->GetPlayer() && m_session.second->GetSecurity() >= type) {
+            m_session.second->GetPlayer()->ForceResetAddons();
+        }
+    }
+}
+
+void World::AIOMessageAll(const AIOMsg &msg, const AccountTypes type)
+{
+    std::string messageStr = msg.dumps();
+
+    for (auto m_session: _sessions) {
+        if (m_session.second->GetPlayer() && m_session.second->GetSecurity() >= type) {
+            m_session.second->GetPlayer()->SendSimpleAIOMessage(messageStr);
+        }
+    }
+}
+
+void World::SendAllSimpleAIOMessage(const std::string &message, const AccountTypes type)
+{
+    for (auto m_session: _sessions) {
+        if (m_session.second->GetPlayer() && m_session.second->GetSecurity() >= type) {
+            m_session.second->GetPlayer()->SendSimpleAIOMessage(message);
+        }
+    }
 }

@@ -84,6 +84,16 @@ public:
         _outCommand(Acore::StringFormatFmt(fmt, std::forward<Args>(args)...), std::to_string(account));
     }
 
+    template<typename... Args>
+    void outAIOMessage(uint32 account, LogLevel const level, std::string_view fmt, Args &&... args)
+    {
+        if (!ShouldLog("AIO", level)) {
+            return;
+        }
+
+        _outAIOMessage(account, level, Acore::StringFormatFmt(fmt, std::forward<Args>(args)...));
+    }
+
     void SetRealmId(uint32 id);
 
     template<class AppenderImpl>
@@ -109,6 +119,7 @@ private:
     void RegisterAppender(uint8 index, AppenderCreatorFn appenderCreateFn);
     void _outMessage(std::string const& filter, LogLevel level, std::string_view message);
     void _outCommand(std::string_view message, std::string_view param1);
+    void _outAIOMessage(uint32 account, LogLevel level, std::string_view message);
 
     std::unordered_map<uint8, AppenderCreatorFn> appenderFactory;
     std::unordered_map<uint8, std::unique_ptr<Appender>> appenders;

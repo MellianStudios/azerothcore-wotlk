@@ -239,6 +239,11 @@ void Log::_outCommand(std::string_view message, std::string_view param1)
     write(std::make_unique<LogMessage>(LOG_LEVEL_INFO, "commands.gm", message, param1));
 }
 
+void Log::_outAIOMessage(uint32 /*account*/, LogLevel level, std::string_view message)
+{
+    write(std::make_unique<LogMessage>(level, "AIO", message));
+}
+
 void Log::write(std::unique_ptr<LogMessage>&& msg) const
 {
     Logger const* logger = GetLoggerByType(msg->type);

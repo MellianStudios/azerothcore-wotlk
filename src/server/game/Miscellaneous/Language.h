@@ -1333,6 +1333,12 @@ enum AcoreStrings
     // 30087-30095 reserved for passive anticheat
 
     LANG_DEBUG_LFG_ON                             = 30096,
-    LANG_DEBUG_LFG_OFF                            = 30097
+    LANG_DEBUG_LFG_OFF                            = 30097,
+
+    LANG_CAIO_FORCERELOAD_SENT                    = 60002,
+    LANG_CAIO_FORCERESET_SENT                     = 60003,
+    LANG_CAIO_RELOADADDONS_ERROR                  = 60004,
+    LANG_CAIO_ADDADDON_ERROR                      = 60005,
+    LANG_CAIO_REMOVEADDON_ERROR                   = 60006,
 };
 #endif

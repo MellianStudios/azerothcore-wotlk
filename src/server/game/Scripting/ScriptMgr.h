@@ -37,6 +37,7 @@
 #include "Weather.h"
 #include "World.h"
 #include <atomic>
+#include <utility>
 
 class AuctionHouseObject;
 class AuraScript;
@@ -2055,10 +2056,121 @@ public:
     [[nodiscard]] virtual bool CanAreaTrigger(Player* /*player*/, AreaTrigger const* /*trigger*/) { return false; }
 };
 
+class AIOScript : public ScriptObject
+{
+public:
+    virtual ~AIOScript()
+    {
+        AIOScript::_scriptByKeyMap.erase(GetKey());
+    }
+
+    // Returns the key of this CAIO script
+    LuaVal GetKey() const
+    {
+        return _key;
+    }
+
+    bool IsDatabaseBound() const
+    {
+        return false;
+    }
+
+    typedef std::function<void(Player *, const LuaVal &)> HandlerFunc;
+    typedef std::function<LuaVal(Player *)> ArgFunc;
+
+protected:
+    // Registers an AIO Handler script of scriptName
+    AIOScript(const LuaVal &scriptKey);
+
+    // Registers a handler function to call when handling
+    // handleKey of this script.
+    void AddHandler(const LuaVal &handlerKey, HandlerFunc function)
+    {
+        _handlerMap[handlerKey] = std::move(function);
+    }
+
+    // Adds a client side handler to call and adds arguments
+    // to sends with it for AIO client initialization.
+    //
+    // You can add additional arguments to the handler by
+    // calling this function again
+    void AddInitArgs(
+        const LuaVal &scriptKey,
+        const LuaVal &handlerKey,
+        ArgFunc a1 = ArgFunc(),
+        ArgFunc a2 = ArgFunc(),
+        ArgFunc a3 = ArgFunc(),
+        ArgFunc a4 = ArgFunc(),
+        ArgFunc a5 = ArgFunc(),
+        ArgFunc a6 = ArgFunc()
+    );
+
+    // Adds a WoW addon file to the list of addons with a unique
+    // addon key to send on AIO client initialization.
+    // Returns true if addon was added, false if addon key is taken.
+    //
+    // It is required to call World::ForceReloadPlayerAddons()
+    // if addons are added after server is fully initialized
+    // for online players to load the added addons.
+    bool AddAddon(const AIOAddon &addon)
+    {
+        return sWorld->AddAddon(addon);
+    }
+
+    // Returns pointer to an AIO script by its key and typename.
+    // Returns null if scriptName doesn't exist or typename was incorrect.
+    template<class ScriptClass>
+    ScriptClass *GetScript(const LuaVal &key);
+
+    template<>
+    AIOScript *GetScript(const LuaVal &key);
+
+private:
+    void OnHandle(Player *sender, const LuaVal &handlerKey, const LuaVal &args);
+
+    LuaVal _key;
+
+    typedef std::unordered_map<LuaVal, HandlerFunc, LuaVal::LuaValHasher> HandlerMapType;
+    HandlerMapType _handlerMap;
+
+    typedef std::unordered_map<LuaVal, AIOScript *, LuaVal::LuaValHasher> AIOScriptByKeyMap;
+    static AIOScriptByKeyMap _scriptByKeyMap;
+
+    friend class ScriptMgr;
+};
+
+class AIOHandlers : public AIOScript
+{
+private:
+    AIOHandlers();
+
+    void HandleInit(Player *sender, const LuaVal &args);
+
+    void HandleError(Player *sender, const LuaVal &args);
+
+    struct InitHookInfo
+    {
+        LuaVal scriptKey;
+        LuaVal handlerKey;
+        std::list<AIOScript::ArgFunc> argsList;
+
+        InitHookInfo(const LuaVal &scriptKey, const LuaVal &handlerKey) : scriptKey(scriptKey), handlerKey(handlerKey)
+        {}
+    };
+
+    typedef std::list<InitHookInfo> HookListType;
+    HookListType _initHookList;
+
+    friend class ScriptMgr;
+
+    friend class AIOScript;
+};
+
 // Manages registration, loading, and execution of scripts.
 class ScriptMgr
 {
     friend class ScriptObject;
+    friend class AIOScript;
 
 private:
     ScriptMgr();
@@ -2461,6 +2573,9 @@ public: /* Scheduled scripts */
     uint32 DecreaseScheduledScriptCount(size_t count) { return _scheduledScripts -= count; }
     bool IsScriptScheduled() const { return _scheduledScripts > 0; }
 
+public: /* AIOScript */
+    void OnAddonMessage(Player* sender, const std::string& message);
+
 public: /* UnitScript */
     void OnHeal(Unit* healer, Unit* reciever, uint32& gain);
     void OnDamage(Unit* attacker, Unit* victim, uint32& damage);
@@ -2626,6 +2741,7 @@ public: /* LootScript */
 
 private:
     uint32 _scriptCount;
+    AIOHandlers* _aioHandlers;
 
     //atomic op counter for active scripts amount
     std::atomic<long> _scheduledScripts;

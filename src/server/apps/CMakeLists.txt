@@ -182,6 +182,7 @@ foreach(APPLICATION_NAME ${APPLICATIONS_BUILD_LIST})
     install(TARGETS ${APP_PROJECT_NAME} DESTINATION bin)
   elseif (WIN32)
     install(TARGETS ${APP_PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
+    install(DIRECTORY extensions DESTINATION "${BIN_DIR}/lua_client_scripts/")
   endif()
 
   set(PATH_TO_PCH ${SOURCE_APP_PATH}/PrecompiledHeaders/${APPLICATION_NAME}PCH.h)

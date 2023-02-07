@@ -496,6 +496,19 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
         }
     }
 
+    //AIO clear long message buffer
+    if (m_Socket && m_Socket->IsOpen()) {
+        for (AddonMessageBufferMap::iterator itr = _addonMessageBuffer.begin(); itr != _addonMessageBuffer.end();) {
+            itr->second.Timer += diff;
+
+            if (itr->second.Timer >= 30000) {
+                _addonMessageBuffer.erase(itr++);
+            } else {
+                ++itr;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -711,6 +724,9 @@ void WorldSession::LogoutPlayer(bool save)
         stmt->SetData(0, GetAccountId());
         CharacterDatabase.Execute(stmt);
     }
+
+    //Clear aio long message buffer
+    _addonMessageBuffer.clear();
 
     m_playerLogout = false;
     m_playerSave = false;

@@ -24,15 +24,33 @@
 #include "ObjectGuid.h"
 #include "QueryResult.h"
 #include "SharedDefines.h"
+#include "smallfolk.h"
+#include "AIOMsg.h"
+
 #include <atomic>
 #include <list>
 #include <map>
 #include <set>
 #include <unordered_map>
+#include <utility>
 
 class WorldPacket;
 class WorldSession;
 class Player;
+
+struct AIOAddon
+{
+    std::string name;
+    std::string code;
+    std::string file;
+    uint32 crc;
+    AccountTypes accountType;
+
+    // AIOAddon container constructor
+    AIOAddon(std::string addonName, std::string addonFile, const AccountTypes type = SEC_PLAYER)
+        : name(std::move(addonName)), file(std::move(addonFile)), crc(0), accountType(type)
+    {}
+};
 
 /// Storage class for commands issued for delayed execution
 struct AC_GAME_API CliCommandHolder
@@ -179,6 +197,8 @@ enum WorldBoolConfigs
     CONFIG_OBJECT_SPARKLES,
     CONFIG_LOW_LEVEL_REGEN_BOOST,
     CONFIG_OBJECT_QUEST_MARKERS,
+    CONFIG_AIO_OBFUSCATE,
+    CONFIG_AIO_COMPRESS,
     BOOL_CONFIG_VALUE_COUNT
 };
 
@@ -409,6 +429,7 @@ enum WorldIntConfigs
     CONFIG_LFG_KICK_PREVENTION_TIMER,
     CONFIG_CHANGE_FACTION_MAX_MONEY,
     CONFIG_WATER_BREATH_TIMER,
+    CONFIG_AIO_MAXPARTS,
     INT_CONFIG_VALUE_COUNT
 };
 
@@ -601,6 +622,17 @@ public:
     [[nodiscard]] virtual std::string const& GetRealmName() const = 0;
     virtual void SetRealmName(std::string name) = 0;
     virtual void RemoveOldCorpses() = 0;
+    // CAIO
+    [[nodiscard]] virtual std::string GetAIOPrefix() const = 0;
+    [[nodiscard]] virtual std::string GetAIOClientScriptPath() const = 0;
+    virtual void ForceReloadPlayerAddons(const AccountTypes type = SEC_PLAYER) = 0;
+    virtual void ForceResetPlayerAddons(const AccountTypes type = SEC_PLAYER) = 0;
+    virtual void AIOMessageAll(const AIOMsg& msg, const AccountTypes type = SEC_PLAYER) = 0;
+    virtual void SendAllSimpleAIOMessage(const std::string& message, const AccountTypes type = SEC_PLAYER) = 0;
+    [[nodiscard]] virtual bool ReloadAddons() = 0;
+    virtual bool AddAddon(const AIOAddon& addon) = 0;
+    [[nodiscard]] virtual bool RemoveAddon(const std::string& addonName) = 0;
+    [[nodiscard]] virtual size_t PrepareClientAddons(const LuaVal& clientData, LuaVal& addonsTable, LuaVal& cacheTable, Player* forPlayer) const = 0;
 };
 
 #endif //AZEROTHCORE_IWORLD_H

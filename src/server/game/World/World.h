@@ -34,10 +34,15 @@
 #include <set>
 #include <unordered_map>
 
+#define AIO_VERSION 1.72
+
 class Object;
 class WorldPacket;
 class WorldSocket;
 class SystemMgr;
+
+class LuaVal;
+class AIOMsg;
 
 struct Realm;
 
@@ -354,6 +359,60 @@ public:
 
     void RemoveOldCorpses() override;
 
+    // AIO prefix configured in worldserver.conf
+    [[nodiscard]] std::string GetAIOPrefix() const override { return m_aioprefix; }
+
+    // AIO client LUA files path configured in worldserver.conf
+    [[nodiscard]] std::string GetAIOClientScriptPath() const override { return m_aioclientpath; }
+
+    // Forces reload on all player AIO addons
+    // Syncs player AIO addons with server
+    void ForceReloadPlayerAddons(const AccountTypes type = SEC_PLAYER) override;
+
+    // Forces reset on all player AIO addons
+    // Player AIO addons and addon data is deleted and downloaded again
+    void ForceResetPlayerAddons(const AccountTypes type = SEC_PLAYER) override;
+
+    // Sends an AIO message to all players
+    // See: class AIOMsg
+    void AIOMessageAll(const AIOMsg& msg, const AccountTypes type = SEC_PLAYER) override;
+
+    // Sends a simple string message to all players
+
+    // AIO can only understand smallfolk LuaVal::dumps() format
+    // Handler functions are called by creating a table as below
+    // {
+    //     {n, ScriptName, HandlerName(optional), Arg1..N(optional) },
+    //     {n, AnotherScriptName, AnotherHandlerName(optional), Arg1..N(optional) }
+    // }
+    // Where n is number of arguments including handler name as a argument
+    void SendAllSimpleAIOMessage(const std::string& message, const AccountTypes type = SEC_PLAYER) override;
+
+    // Reloads client side AIO addon files and force reloads
+    // all player AIO addons
+    // Returns true if successful, false if an error occurred
+    [[nodiscard]] bool ReloadAddons() override;
+
+    // Adds a WoW AIO addon file to the list of addons with a unique
+    // addon name to send on AIO client initialization.
+    // Returns true if addon was added, false if addon name is already taken
+    //
+    // It is required to call World::ForceReloadPlayerAddons()
+    // if addons are added after server is fully initialized
+    // for online players to load the added addons.
+    bool AddAddon(const AIOAddon& addon) override;
+
+    // Removes an addon from addon list and force reloads affected players
+    // Returns permission id if an addon was removed, 0 if addon not found
+    //
+    // It is required to call World::ForceReloadPlayerAddons()
+    // if addons are added after server is fully initialized
+    // for online players to load the added addons.
+    [[nodiscard]] bool RemoveAddon(const std::string& addonName) override;
+
+    // For internal use only
+    [[nodiscard]] size_t PrepareClientAddons(const LuaVal& clientData, LuaVal& addonsTable, LuaVal& cacheTable, Player* forPlayer) const override;
+
 protected:
     void _UpdateGameTime();
     // callback for UpdateRealmCharacters
@@ -452,6 +511,13 @@ private:
      * @param session The World Session that we are finalizing.
      */
     inline void FinalizePlayerWorldSession(WorldSession* session);
+
+    typedef std::list<AIOAddon> AddonCodeListType;
+    AddonCodeListType m_AddonList;
+    std::string m_aioprefix;
+    std::string m_aioclientpath;
+
+    friend class AIOScript;
 };
 
 std::unique_ptr<IWorld>& getWorldInstance();

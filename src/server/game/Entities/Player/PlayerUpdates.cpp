@@ -420,6 +420,17 @@ void Player::Update(uint32 p_time)
         m_delayed_unit_relocation_timer = 0;
         RemoveFromNotify(NOTIFY_VISIBILITY_CHANGED);
     }
+
+    //AIO Init cooldown
+    if (m_aioInitCd)
+    {
+        m_aioInitTimer += p_time;
+        if (m_aioInitTimer >= 5000)
+        {
+            m_aioInitCd = false;
+            m_aioInitTimer = 0;
+        }
+    }
 }
 
 void Player::UpdateMirrorTimers()
