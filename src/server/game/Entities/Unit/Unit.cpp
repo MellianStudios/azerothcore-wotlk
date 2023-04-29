@@ -1968,6 +1968,8 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
             data << uint32(i_spellProto->GetSchoolMask());
             victim->SendMessageToSet(&data, true);
 
+            sScriptMgr->OnDealMeleeDamage(damageInfo, &dmgInfo, overkill);
+
             Unit::DealDamage(victim, this, damage, 0, SPELL_DIRECT_DAMAGE, i_spellProto->GetSchoolMask(), i_spellProto, true);
         }
     }
@@ -6224,6 +6226,9 @@ void Unit::SendSpellNonMeleeReflectLog(SpellNonMeleeDamage* log, Unit* attacker)
     data << uint32(log->blocked);                           // blocked
     data << uint32(log->HitInfo);
     data << uint8 (0);                                      // flag to use extend data
+
+    sScriptMgr->OnSendSpellNonMeleeReflectLog(log, attacker);
+
     ToPlayer()->SendDirectMessage(&data);
 }
 
@@ -6272,6 +6277,9 @@ void Unit::SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log)
     //    data << float(log->GlanceChance);
     //    data << float(log->CrushChance);
     //}
+
+    sScriptMgr->OnSendSpellNonMeleeDamageLog(log);
+
     SendMessageToSet(&data, true);
 }
 
@@ -6359,6 +6367,8 @@ void Unit::SendPeriodicAuraLog(SpellPeriodicAuraLogInfo* pInfo)
             return;
     }
 
+    sScriptMgr->OnSendPeriodicAuraLog(this, pInfo);
+
     SendMessageToSet(&data, true);
 }
 
@@ -6373,6 +6383,9 @@ void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
     data << target->GetGUID();                              // target GUID
     data << uint8(missInfo);
     // end loop
+
+    sScriptMgr->OnSendSpellMiss(this, target, spellID, missInfo);
+
     SendMessageToSet(&data, true);
 }
 
@@ -6383,6 +6396,9 @@ void Unit::SendSpellDamageResist(Unit* target, uint32 spellId)
     data << target->GetGUID();
     data << uint32(spellId);
     data << uint8(0); // bool - log format: 0-default, 1-debug
+
+    sScriptMgr->OnSendSpellDamageResist(this, target, spellId);
+
     SendMessageToSet(&data, true);
 }
 
@@ -6393,6 +6409,9 @@ void Unit::SendSpellDamageImmune(Unit* target, uint32 spellId)
     data << target->GetGUID();
     data << uint32(spellId);
     data << uint8(0); // bool - log format: 0-default, 1-debug
+
+    sScriptMgr->OnSendSpellDamageImmune(this, target, spellId);
+
     SendMessageToSet(&data, true);
 }
 
@@ -6479,6 +6498,8 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
         data << float(0);       // ditto ^
         data << uint32(0);
     }
+
+    sScriptMgr->OnSendAttackStateUpdate(damageInfo, overkill);
 
     SendMessageToSet(&data, true);
 }
@@ -11222,6 +11243,9 @@ void Unit::SendHealSpellLog(HealInfo const& healInfo, bool critical)
     data << uint32(healInfo.GetAbsorb()); // Absorb amount
     data << uint8(critical ? 1 : 0);
     data << uint8(0); // unused
+
+    sScriptMgr->OnSendHealSpellLog(healInfo, critical);
+
     SendMessageToSet(&data, true);
 }
 
@@ -11249,6 +11273,9 @@ void Unit::SendEnergizeSpellLog(Unit* victim, uint32 spellID, uint32 damage, Pow
     data << uint32(spellID);
     data << uint32(powerType);
     data << uint32(damage);
+
+    sScriptMgr->OnSendEnergizeSpellLog(this, victim, spellID, damage, powerType);
+
     SendMessageToSet(&data, true);
 }
 

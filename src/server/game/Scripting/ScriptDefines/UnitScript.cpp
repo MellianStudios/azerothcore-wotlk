@@ -250,3 +250,73 @@ void ScriptMgr::OnAuraApply(Unit* unit, Aura* aura)
         script->OnAuraApply(unit, aura);
     });
 }
+
+void ScriptMgr::OnDealMeleeDamage(CalcDamageInfo *calcDamageInfo, DamageInfo *damageInfo, uint32 overkill)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnDealMeleeDamage(calcDamageInfo, damageInfo, overkill);
+    });
+}
+
+void ScriptMgr::OnSendSpellNonMeleeDamageLog(SpellNonMeleeDamage *log)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendSpellNonMeleeDamageLog(log);
+    });
+}
+
+void ScriptMgr::OnSendAttackStateUpdate(CalcDamageInfo *damageInfo, int32 overkill)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendAttackStateUpdate(damageInfo, overkill);
+    });
+}
+
+void ScriptMgr::OnSendSpellDamageImmune(Unit *attacker, Unit *victim, uint32 spellId)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendSpellDamageImmune(attacker, victim, spellId);
+    });
+}
+
+void ScriptMgr::OnSendSpellMiss(Unit *attacker, Unit *victim, uint32 spellID, SpellMissInfo missInfo)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendSpellMiss(attacker, victim, spellID, missInfo);
+    });
+}
+
+void ScriptMgr::OnSendSpellDamageResist(Unit *attacker, Unit *victim, uint32 spellId)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendSpellDamageResist(attacker, victim, spellId);
+    });
+}
+
+void ScriptMgr::OnSendSpellNonMeleeReflectLog(SpellNonMeleeDamage *log, Unit *attacker)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendSpellNonMeleeReflectLog(log, attacker);
+    });
+}
+
+void ScriptMgr::OnSendHealSpellLog(HealInfo const &healInfo, bool critical)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendHealSpellLog(healInfo, critical);
+    });
+}
+
+void ScriptMgr::OnSendEnergizeSpellLog(Unit *attacker, Unit *victim, uint32 spellID, uint32 damage, Powers powerType)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendEnergizeSpellLog(attacker, victim, spellID, damage, powerType);
+    });
+}
+
+void ScriptMgr::OnSendPeriodicAuraLog(Unit *victim, SpellPeriodicAuraLogInfo *pInfo)
+{
+    ExecuteScript<UnitScript>([&](UnitScript *script) {
+        script->OnSendPeriodicAuraLog(victim, pInfo);
+    });
+}

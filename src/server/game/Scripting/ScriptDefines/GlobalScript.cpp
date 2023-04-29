@@ -207,3 +207,17 @@ void ScriptMgr::OnBeforeSetBossState(uint32 id, EncounterState newState, Encount
         script->OnBeforeSetBossState(id, newState, oldState, instance);
     });
 }
+
+void ScriptMgr::OnSpellSendSpellGo(Spell *spell)
+{
+    ExecuteScript<GlobalScript>([&](GlobalScript *script) {
+        script->OnSpellSendSpellGo(spell);
+    });
+}
+
+void ScriptMgr::OnAuraApplicationClientUpdate(Unit *target, Aura *aura, bool remove)
+{
+    ExecuteScript<GlobalScript>([&](GlobalScript *script) {
+        script->OnAuraApplicationClientUpdate(target, aura, remove);
+    });
+}

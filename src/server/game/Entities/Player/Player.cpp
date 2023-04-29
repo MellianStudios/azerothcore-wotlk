@@ -783,6 +783,9 @@ uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
     packet.Amount = damage;
     packet.Absorbed = absorb;
     packet.Resisted = resist;
+
+    sScriptMgr->OnEnvironmentalDamage(this, type, damage);
+
     SendMessageToSet(packet.Write(), true);
 
     uint32 final_damage = Unit::DealDamage(this, this, damage, nullptr, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);

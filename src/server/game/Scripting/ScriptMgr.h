@@ -31,6 +31,7 @@
 #include "LFGMgr.h"
 #include "ObjectMgr.h"
 #include "PetDefines.h"
+#include "Player.h"
 #include "QuestDef.h"
 #include "SharedDefines.h"
 #include "Tuples.h"
@@ -38,6 +39,7 @@
 #include "Weather.h"
 #include "World.h"
 #include <atomic>
+#include <utility>
 
 class AuctionHouseObject;
 class AuraScript;
@@ -470,6 +472,36 @@ public:
     virtual void OnUnitEnterEvadeMode(Unit* /*unit*/, uint8 /*evadeReason*/) { }
     virtual void OnUnitEnterCombat(Unit* /*unit*/, Unit* /*victim*/) { }
     virtual void OnUnitDeath(Unit* /*unit*/, Unit* /*killer*/) { }
+
+    virtual void OnDealMeleeDamage(CalcDamageInfo */*calcDamageInfo*/, DamageInfo */*damageInfo*/, uint32 /*overkill*/)
+    {}
+
+    virtual void OnSendSpellNonMeleeDamageLog(SpellNonMeleeDamage * /*log*/)
+    {}
+
+    virtual void OnSendAttackStateUpdate(CalcDamageInfo * /*damageInfo*/, int32 /*overkill*/)
+    {}
+
+    virtual void OnSendSpellDamageImmune(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellId*/)
+    {}
+
+    virtual void OnSendSpellMiss(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellID*/, SpellMissInfo /*missInfo*/)
+    {}
+
+    virtual void OnSendSpellDamageResist(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellId*/)
+    {}
+
+    virtual void OnSendSpellNonMeleeReflectLog(SpellNonMeleeDamage * /*log*/, Unit * /*attacker*/)
+    {}
+
+    virtual void OnSendHealSpellLog(HealInfo const & /*healInfo*/, bool /*critical*/)
+    {}
+
+    virtual void OnSendEnergizeSpellLog(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellID*/, uint32 /*damage*/, Powers /*powerType*/)
+    {}
+
+    virtual void OnSendPeriodicAuraLog(Unit * /*victim*/, SpellPeriodicAuraLogInfo * /*pInfo*/)
+    {}
 };
 
 class MovementHandlerScript : public ScriptObject
@@ -1455,6 +1487,9 @@ public:
     virtual void AnticheatUpdateMovementInfo(Player* /*player*/, MovementInfo const& /*movementInfo*/) { }
     [[nodiscard]] virtual bool AnticheatHandleDoubleJump(Player* /*player*/, Unit* /*mover*/) { return true; }
     [[nodiscard]] virtual bool AnticheatCheckMovementInfo(Player* /*player*/, MovementInfo const& /*movementInfo*/, Unit* /*mover*/, bool /*jump*/) { return true; }
+
+    virtual void OnEnvironmentalDamage(Player * /*player*/, EnviromentalDamage /*type*/, uint32 /*damage*/)
+    {}
 };
 
 class AccountScript : public ScriptObject
@@ -1604,6 +1639,12 @@ public:
 
     // Called when any raid boss has their state updated (e.g. pull, reset, kill)
     virtual void OnBeforeSetBossState(uint32 /*id*/, EncounterState /*newState*/, EncounterState /*oldState*/, Map* /*instance*/) { }
+
+    virtual void OnSpellSendSpellGo(Spell */*spell*/)
+    {}
+
+    virtual void OnAuraApplicationClientUpdate(Unit */*target*/, Aura */*aura*/, bool /*remove*/)
+    {}
 };
 
 class BGScript : public ScriptObject
@@ -2388,6 +2429,8 @@ public: /* PlayerScript */
     bool AnticheatHandleDoubleJump(Player* player, Unit* mover);
     bool AnticheatCheckMovementInfo(Player* player, MovementInfo const& movementInfo, Unit* mover, bool jump);
 
+    void OnEnvironmentalDamage(Player *player, EnviromentalDamage type, uint32 damage);
+
 public: /* AccountScript */
     void OnAccountLogin(uint32 accountId);
     void OnLastIpUpdate(uint32 accountId, std::string ip);
@@ -2441,6 +2484,10 @@ public: /* GlobalScript */
     void OnInstanceIdRemoved(uint32 instanceId);
     void OnBeforeSetBossState(uint32 id, EncounterState newState, EncounterState oldState, Map* instance);
 
+    void OnSpellSendSpellGo(Spell *spell);
+
+    void OnAuraApplicationClientUpdate(Unit *target, Aura *aura, bool remove);
+
 public: /* Scheduled scripts */
     uint32 IncreaseScheduledScriptsCount() { return ++_scheduledScripts; }
     uint32 DecreaseScheduledScriptCount() { return --_scheduledScripts; }
@@ -2470,6 +2517,26 @@ public: /* UnitScript */
     void OnUnitEnterEvadeMode(Unit* unit, uint8 why);
     void OnUnitEnterCombat(Unit* unit, Unit* victim);
     void OnUnitDeath(Unit* unit, Unit* killer);
+
+    void OnDealMeleeDamage(CalcDamageInfo *calcDamageInfo, DamageInfo *damageInfo, uint32 overkill);
+
+    void OnSendSpellNonMeleeDamageLog(SpellNonMeleeDamage *log);
+
+    void OnSendAttackStateUpdate(CalcDamageInfo *damageInfo, int32 overkill);
+
+    void OnSendSpellDamageImmune(Unit *attacker, Unit *victim, uint32 spellId);
+
+    void OnSendSpellMiss(Unit *attacker, Unit *victim, uint32 spellID, SpellMissInfo missInfo);
+
+    void OnSendSpellDamageResist(Unit *attacker, Unit *victim, uint32 spellId);
+
+    void OnSendSpellNonMeleeReflectLog(SpellNonMeleeDamage *log, Unit *attacker);
+
+    void OnSendHealSpellLog(HealInfo const &healInfo, bool critical);
+
+    void OnSendEnergizeSpellLog(Unit *attacker, Unit *victim, uint32 spellID, uint32 damage, Powers powerType);
+
+    void OnSendPeriodicAuraLog(Unit *victim, SpellPeriodicAuraLogInfo *pInfo);
 
 public: /* MovementHandlerScript */
     void OnPlayerMove(Player* player, MovementInfo movementInfo, uint32 opcode);

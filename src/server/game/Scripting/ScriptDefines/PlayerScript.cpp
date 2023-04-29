@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Player.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 
@@ -1619,4 +1620,11 @@ bool ScriptMgr::AnticheatCheckMovementInfo(Player* player, MovementInfo const& m
     }
 
     return true;
+}
+
+void ScriptMgr::OnEnvironmentalDamage(Player* player, EnviromentalDamage type, uint32 damage)
+{
+    ExecuteScript<PlayerScript>([&](PlayerScript *script) {
+        script->OnEnvironmentalDamage(player, type, damage);
+    });
 }
