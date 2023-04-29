@@ -367,12 +367,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
             break;
         case CHAT_MSG_WHISPER:
             {
-                if (sender->GetLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ))
-                {
-                    SendNotification(GetAcoreString(LANG_WHISPER_REQ), sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ));
-                    return;
-                }
-
                 if (!normalizePlayerName(to))
                 {
                     SendPlayerNotFoundNotice(to);
@@ -382,6 +376,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recvData)
                 Player* receiver = ObjectAccessor::FindPlayerByName(to, false);
                 bool senderIsPlayer = AccountMgr::IsPlayerAccount(GetSecurity());
                 bool receiverIsPlayer = AccountMgr::IsPlayerAccount(receiver ? receiver->GetSession()->GetSecurity() : SEC_PLAYER);
+
+                if (sender->GetLevel() < sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ) && receiver != sender)
+                {
+                    SendNotification(GetAcoreString(LANG_WHISPER_REQ), sWorld->getIntConfig(CONFIG_CHAT_WHISPER_LEVEL_REQ));
+                    return;
+                }
 
                 //AIO
                 size_t delimPos;

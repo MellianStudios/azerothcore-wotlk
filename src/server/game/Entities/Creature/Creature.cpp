@@ -50,7 +50,7 @@
 #include "World.h"
 #include "WorldPacket.h"
 
-// TODO: this import is not necessary for compilation and marked as unused by the IDE
+/// @todo: this import is not necessary for compilation and marked as unused by the IDE
 //  however, for some reasons removing it would cause a damn linking issue
 //  there is probably some underlying problem with imports which should properly addressed
 //  see: https://github.com/azerothcore/azerothcore-wotlk/issues/9766
@@ -459,17 +459,8 @@ bool Creature::InitEntry(uint32 Entry, const CreatureData* data)
 
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0f);
 
-    float runSpeed = cinfo->speed_run;
-    if (Pet* pet = ToPet())
-    {
-        if (pet->isControlled() && pet->GetOwnerGUID().IsPlayer())
-        {
-            runSpeed = 1.15f;
-        }
-    }
-
     SetSpeed(MOVE_WALK, cinfo->speed_walk);
-    SetSpeed(MOVE_RUN, runSpeed);
+    SetSpeed(MOVE_RUN, cinfo->speed_run);
     SetSpeed(MOVE_SWIM, cinfo->speed_swim);
     SetSpeed(MOVE_FLIGHT, cinfo->speed_flight);
 
@@ -547,7 +538,7 @@ bool Creature::UpdateEntry(uint32 Entry, const CreatureData* data, bool changele
 
     SetMeleeDamageSchool(SpellSchools(cInfo->dmgschool));
     CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(GetLevel(), cInfo->unit_class);
-    float armor = (float)stats->GenerateArmor(cInfo); // TODO: Why is this treated as uint32 when it's a float?
+    float armor = (float)stats->GenerateArmor(cInfo); /// @todo: Why is this treated as uint32 when it's a float?
     SetModifierValue(UNIT_MOD_ARMOR,             BASE_VALUE, armor);
     SetModifierValue(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_HOLY]));
     SetModifierValue(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_FIRE]));
@@ -1521,7 +1512,7 @@ void Creature::SelectLevel(bool changelevel)
     SetMaxPower(POWER_MANA, mana);                          //MAX Mana
     SetPower(POWER_MANA, mana);
 
-    // TODO: set UNIT_FIELD_POWER*, for some creature class case (energy, etc)
+    /// @todo: set UNIT_FIELD_POWER*, for some creature class case (energy, etc)
 
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)health);
     SetModifierValue(UNIT_MOD_MANA, BASE_VALUE, (float)mana);
@@ -2454,12 +2445,6 @@ bool Creature::CanAssistTo(Unit const* u, Unit const* enemy, bool checkfaction /
     if (GetCharmerOrOwnerGUID())
         return false;
 
-    // Check for ignore assistance extra flag
-    if (m_creatureInfo->HasFlagsExtra(CREATURE_FLAG_EXTRA_IGNORE_ASSISTANCE_CALL))
-    {
-        return false;
-    }
-
     // only from same creature faction
     if (checkfaction)
     {
@@ -2803,6 +2788,16 @@ void Creature::AddSpellCooldown(uint32 spell_id, uint32 /*itemid*/, uint32 end_t
     else if (spellcooldown)
     {
         _AddCreatureSpellCooldown(spellInfo->Id, 0, spellcooldown);
+    }
+
+    if (sSpellMgr->HasSpellCooldownOverride(spellInfo->Id))
+    {
+        if (IsCharmed() && GetCharmer()->IsPlayer())
+        {
+            WorldPacket data;
+            BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellInfo->Id, spellcooldown);
+            GetCharmer()->ToPlayer()->SendDirectMessage(&data);
+        }
     }
 }
 

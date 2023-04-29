@@ -27,6 +27,7 @@
 #include "DynamicObject.h"
 #include "GameEventMgr.h"
 #include "Group.h"
+#include "InstanceScript.h"
 #include "LFGMgr.h"
 #include "ObjectMgr.h"
 #include "PetDefines.h"
@@ -1206,6 +1207,9 @@ public:
     // After receiving item as a quest reward
     virtual void OnQuestRewardItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/) { }
 
+    // When placing a bid or buying out an auction
+    [[nodiscard]] virtual bool CanPlaceAuctionBid(Player* /*player*/, AuctionEntry* /*auction*/) { return true; }
+
     // After receiving item as a group roll reward
     virtual void OnGroupRollRewardItem(Player* /*player*/, Item* /*item*/, uint32 /*count*/, RollVote /*voteType*/, Roll* /*roll*/) { }
 
@@ -1617,6 +1621,9 @@ public:
 
     // Called when instance id is removed from database (e.g. instance reset)
     virtual void OnInstanceIdRemoved(uint32 /*instanceId*/) { }
+
+    // Called when any raid boss has their state updated (e.g. pull, reset, kill)
+    virtual void OnBeforeSetBossState(uint32 /*id*/, EncounterState /*newState*/, EncounterState /*oldState*/, Map* /*instance*/) { }
 };
 
 class BGScript : public ScriptObject
@@ -2420,6 +2427,7 @@ public: /* PlayerScript */
     void OnStoreNewItem(Player* player, Item* item, uint32 count);
     void OnCreateItem(Player* player, Item* item, uint32 count);
     void OnQuestRewardItem(Player* player, Item* item, uint32 count);
+    bool CanPlaceAuctionBid(Player* player, AuctionEntry* auction);
     void OnGroupRollRewardItem(Player* player, Item* item, uint32 count, RollVote voteType, Roll* roll);
     bool OnBeforeOpenItem(Player* player, Item* item);
     bool OnBeforePlayerQuestComplete(Player* player, uint32 quest_id);
@@ -2566,6 +2574,7 @@ public: /* GlobalScript */
     void OnLoadSpellCustomAttr(SpellInfo* spell);
     bool OnAllowedForPlayerLootCheck(Player const* player, ObjectGuid source);
     void OnInstanceIdRemoved(uint32 instanceId);
+    void OnBeforeSetBossState(uint32 id, EncounterState newState, EncounterState oldState, Map* instance);
 
 public: /* Scheduled scripts */
     uint32 IncreaseScheduledScriptsCount() { return ++_scheduledScripts; }

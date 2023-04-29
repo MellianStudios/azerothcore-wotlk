@@ -581,7 +581,7 @@ enum MovementFlags
     MOVEMENTFLAG_FALLING_SLOW          = 0x20000000,               // active rogue safe fall spell (passive)
     MOVEMENTFLAG_HOVER                 = 0x40000000,               // hover, cannot jump
 
-    // TODO: Check if PITCH_UP and PITCH_DOWN really belong here..
+    /// @todo: Check if PITCH_UP and PITCH_DOWN really belong here..
     MOVEMENTFLAG_MASK_MOVING =
         MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_BACKWARD | MOVEMENTFLAG_STRAFE_LEFT | MOVEMENTFLAG_STRAFE_RIGHT |
         MOVEMENTFLAG_PITCH_UP | MOVEMENTFLAG_PITCH_DOWN | MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR | MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING |
@@ -757,6 +757,18 @@ struct CleanDamage
 struct CalcDamageInfo;
 struct SpellNonMeleeDamage;
 
+struct DelayedDamage
+{
+    Unit* attacker;
+    Unit* victim;
+    uint32 damage;
+    CleanDamage const* cleanDamage;
+    DamageEffectType damagetype;
+    SpellSchoolMask damageSchoolMask;
+    SpellInfo const* spellProto;
+    bool durabilityLoss;
+};
+
 class DamageInfo
 {
 private:
@@ -806,6 +818,7 @@ private:
     Unit* const m_healer;
     Unit* const m_target;
     uint32 m_heal;
+    uint32 m_effectiveHeal;
     uint32 m_absorb;
     SpellInfo const* const m_spellInfo;
     SpellSchoolMask const m_schoolMask;
@@ -814,12 +827,17 @@ public:
         : m_healer(_healer), m_target(_target), m_heal(_heal), m_spellInfo(_spellInfo), m_schoolMask(_schoolMask)
     {
         m_absorb = 0;
+        m_effectiveHeal = 0;
     }
+
     void AbsorbHeal(uint32 amount)
     {
         amount = std::min(amount, GetHeal());
         m_absorb += amount;
         m_heal -= amount;
+
+        amount = std::min(amount, GetEffectiveHeal());
+        m_effectiveHeal -= amount;
     }
 
     void SetHeal(uint32 amount)
@@ -827,9 +845,15 @@ public:
         m_heal = amount;
     }
 
+    void SetEffectiveHeal(uint32 amount)
+    {
+        m_effectiveHeal = amount;
+    }
+
     [[nodiscard]] Unit* GetHealer() const { return m_healer; }
     [[nodiscard]] Unit* GetTarget() const { return m_target; }
     [[nodiscard]] uint32 GetHeal() const { return m_heal; }
+    [[nodiscard]] uint32 GetEffectiveHeal() const { return m_effectiveHeal; }
     [[nodiscard]] uint32 GetAbsorb() const { return m_absorb; }
     [[nodiscard]] SpellInfo const* GetSpellInfo() const { return m_spellInfo; };
     [[nodiscard]] SpellSchoolMask GetSchoolMask() const { return m_schoolMask; };
@@ -900,7 +924,7 @@ struct CalcDamageInfo
     uint32 procVictim;
     uint32 procEx;
     uint32 cleanDamage;          // Used only for rage calculation
-    MeleeHitOutcome hitOutCome;  // TODO: remove this field (need use TargetState)
+    MeleeHitOutcome hitOutCome;  /// @todo: remove this field (need use TargetState)
 };
 
 // Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
@@ -1337,7 +1361,7 @@ public:
 
     void Update(uint32 time) override;
 
-    void setAttackTimer(WeaponAttackType type, int32 time) { m_attackTimer[type] = time; }
+    void setAttackTimer(WeaponAttackType type, int32 time) { m_attackTimer[type] = time; }  /// @todo - Look to convert to std::chrono
     void resetAttackTimer(WeaponAttackType type = BASE_ATTACK);
     [[nodiscard]] int32 getAttackTimer(WeaponAttackType type) const { return m_attackTimer[type]; }
     [[nodiscard]] bool isAttackReady(WeaponAttackType type = BASE_ATTACK) const { return m_attackTimer[type] <= 0; }
@@ -1546,7 +1570,7 @@ public:
 
     uint16 GetMaxSkillValueForLevel(Unit const* target = nullptr) const { return (target ? getLevelForTarget(target) : GetLevel()) * 5; }
     static void DealDamageMods(Unit const* victim, uint32& damage, uint32* absorb);
-    static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true, bool allowGM = false, Spell const* spell = nullptr);
+    static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true, bool allowGM = false, Spell const* spell = nullptr, bool delayed = false);
     static void Kill(Unit* killer, Unit* victim, bool durabilityLoss = true, WeaponAttackType attackType = BASE_ATTACK, SpellInfo const* spellProto = nullptr, Spell const* spell = nullptr);
     void KillSelf(bool durabilityLoss = true, WeaponAttackType attackType = BASE_ATTACK, SpellInfo const* spellProto = nullptr, Spell const* spell = nullptr) { Kill(this, this, durabilityLoss, attackType, spellProto, spell); };
     static int32 DealHeal(Unit* healer, Unit* victim, uint32 addhealth);
@@ -1723,7 +1747,7 @@ public:
     [[nodiscard]] virtual bool IsUnderWater() const;
     bool isInAccessiblePlaceFor(Creature const* c) const;
 
-    void SendHealSpellLog(Unit* victim, uint32 SpellID, uint32 Damage, uint32 OverHeal, uint32 Absorb, bool critical = false);
+    void SendHealSpellLog(HealInfo const& healInfo, bool critical = false);
     int32 HealBySpell(HealInfo& healInfo, bool critical = false);
     void SendEnergizeSpellLog(Unit* victim, uint32 SpellID, uint32 Damage, Powers powertype);
     void EnergizeBySpell(Unit* victim, uint32 SpellID, uint32 Damage, Powers powertype);
@@ -2461,6 +2485,8 @@ public:
 
     std::string GetDebugInfo() const override;
 
+    [[nodiscard]] uint32 GetOldFactionId() const { return _oldFactionId; }
+
 protected:
     explicit Unit (bool isWorldObject);
 
@@ -2543,7 +2569,7 @@ protected:
 
 private:
     bool IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const*& spellProcEvent, ProcEventInfo const& eventInfo);
-    bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, Spell const* spellProc = nullptr);
+    bool HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, ProcEventInfo const& eventInfo);
     bool HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, bool* handled);
     bool HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown, uint32 procPhase, ProcEventInfo& eventInfo);
     bool HandleOverrideClassScriptAuraProc(Unit* victim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const* procSpell, uint32 cooldown);

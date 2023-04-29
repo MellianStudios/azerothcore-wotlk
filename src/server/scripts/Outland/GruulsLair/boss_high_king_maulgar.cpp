@@ -121,14 +121,14 @@ struct boss_high_king_maulgar : public BossAI
         }
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
-        _EnterCombat();
+        _JustEngagedWith();
         Talk(SAY_AGGRO);
 
-        events.ScheduleEvent(EVENT_ARCING_SMASH, 6s);
-        events.ScheduleEvent(EVENT_MIGHTY_BLOW, 20s);
-        events.ScheduleEvent(EVENT_WHIRLWIND, 30s);
+        events.ScheduleEvent(EVENT_ARCING_SMASH, 10s);
+        events.ScheduleEvent(EVENT_MIGHTY_BLOW, 15s);
+        events.ScheduleEvent(EVENT_WHIRLWIND, 54s);
         events.ScheduleEvent(EVENT_CHECK_HEALTH, 500ms);
     }
 
@@ -149,7 +149,7 @@ struct boss_high_king_maulgar : public BossAI
                 break;
             case EVENT_MIGHTY_BLOW:
                 me->CastSpell(me->GetVictim(), SPELL_MIGHTY_BLOW, false);
-                events.ScheduleEvent(EVENT_MIGHTY_BLOW, 16s);
+                events.ScheduleEvent(EVENT_MIGHTY_BLOW, 15s);
                 break;
             case EVENT_WHIRLWIND:
                 events.DelayEvents(15s);
@@ -209,14 +209,14 @@ struct boss_olm_the_summoner : public ScriptedAI
             me->GetMotionMaster()->MoveChase(who, 25.0f);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetInCombatWithZone();
         instance->SetBossState(DATA_MAULGAR, IN_PROGRESS);
 
-        events.ScheduleEvent(EVENT_ADD_ABILITY1, 10s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY2, 15s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY1, 500ms);
+        events.ScheduleEvent(EVENT_ADD_ABILITY2, 5s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY3, 6500ms);
     }
 
     void JustDied(Unit* /*killer*/) override
@@ -241,20 +241,18 @@ struct boss_olm_the_summoner : public ScriptedAI
         switch (events.ExecuteEvent())
         {
             case EVENT_ADD_ABILITY1:
-                DoCastVictim(SPELL_DARK_DECAY);
-                events.ScheduleEvent(EVENT_ADD_ABILITY1, 7s);
+                me->CastSpell(me, SPELL_SUMMON_WFH, false);
+                events.ScheduleEvent(EVENT_ADD_ABILITY1, 50s);
                 break;
             case EVENT_ADD_ABILITY2:
-                me->CastSpell(me, SPELL_SUMMON_WFH, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY2, 30s);
+                DoCastVictim(SPELL_DARK_DECAY);
+                events.ScheduleEvent(EVENT_ADD_ABILITY2, 6500ms);
                 break;
             case EVENT_ADD_ABILITY3:
-                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 0))
-                    me->CastSpell(target, SPELL_DEATH_COIL, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+                DoCastRandomTarget(SPELL_DEATH_COIL);
+                events.ScheduleEvent(EVENT_ADD_ABILITY3, 7s);
                 break;
         }
-
         DoMeleeAttackIfReady();
     }
 };
@@ -275,14 +273,14 @@ struct boss_kiggler_the_crazed : public ScriptedAI
         instance->SetBossState(DATA_MAULGAR, NOT_STARTED);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetInCombatWithZone();
         instance->SetBossState(DATA_MAULGAR, IN_PROGRESS);
 
-        events.ScheduleEvent(EVENT_ADD_ABILITY1, 5s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY2, 10s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY1, 1500ms);
+        events.ScheduleEvent(EVENT_ADD_ABILITY2, 5s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY3, 25s);
         events.ScheduleEvent(EVENT_ADD_ABILITY4, 30s);
     }
 
@@ -303,21 +301,23 @@ struct boss_kiggler_the_crazed : public ScriptedAI
         switch (events.ExecuteEvent())
         {
             case EVENT_ADD_ABILITY1:
-                if (Unit* target = SelectTarget(SelectTargetMethod::MaxThreat, 1))
-                    me->CastSpell(target, SPELL_GREATER_POLYMORPH, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY1, 20s);
+                DoCastVictim(SPELL_LIGHTNING_BOLT);
+                events.ScheduleEvent(EVENT_ADD_ABILITY1, 1500ms);
                 break;
             case EVENT_ADD_ABILITY2:
-                if (Unit* target = SelectTarget(SelectTargetMethod::Random, 1))
-                    me->CastSpell(target, SPELL_LIGHTNING_BOLT, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY2, 1500ms);
+                DoCastVictim(SPELL_ARCANE_SHOCK);
+                events.ScheduleEvent(EVENT_ADD_ABILITY2, 5s);
                 break;
             case EVENT_ADD_ABILITY3:
-                me->CastSpell(me->GetVictim(), SPELL_ARCANE_SHOCK, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+                if (Unit* target = SelectTarget(SelectTargetMethod::MaxThreat, 1)) //target method should perhaps change
+                    me->CastSpell(target, SPELL_GREATER_POLYMORPH, false);
+                events.ScheduleEvent(EVENT_ADD_ABILITY3, 11s);
                 break;
             case EVENT_ADD_ABILITY4:
-                me->CastSpell(me, SPELL_ARCANE_EXPLOSION, false);
+            if (me->SelectNearestPlayer(30.0f))
+                {
+                     DoCastAOE(SPELL_ARCANE_EXPLOSION);
+                }
                 events.ScheduleEvent(EVENT_ADD_ABILITY4, 30s);
                 break;
         }
@@ -342,14 +342,14 @@ struct boss_blindeye_the_seer : public ScriptedAI
         instance->SetBossState(DATA_MAULGAR, NOT_STARTED);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetInCombatWithZone();
         instance->SetBossState(DATA_MAULGAR, IN_PROGRESS);
 
-        events.ScheduleEvent(EVENT_ADD_ABILITY1, 1700ms);
-        events.ScheduleEvent(EVENT_ADD_ABILITY2, 10s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY1, 11s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY2, 30s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY3, 31s);
     }
 
     void JustDied(Unit* /*killer*/) override
@@ -369,13 +369,15 @@ struct boss_blindeye_the_seer : public ScriptedAI
         switch (events.ExecuteEvent())
         {
             case EVENT_ADD_ABILITY1:
-                me->CastSpell(me, SPELL_GREATER_PW_SHIELD, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY1, 30s);
+                if (Unit* target = DoSelectLowestHpFriendly(60.0f, 50000))
+                {
+                    DoCast(target, SPELL_HEAL);
+                }
+                events.ScheduleEvent(EVENT_ADD_ABILITY1, 6s);
                 break;
             case EVENT_ADD_ABILITY2:
-                if (Unit* target = DoSelectLowestHpFriendly(60.0f, 50000))
-                    me->CastSpell(target, SPELL_HEAL, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY2, 25s);
+                DoCastSelf(SPELL_GREATER_PW_SHIELD);
+                events.ScheduleEvent(EVENT_ADD_ABILITY2, 30s);
                 break;
             case EVENT_ADD_ABILITY3:
                 me->CastSpell(me, SPELL_PRAYER_OH, false);
@@ -412,14 +414,14 @@ struct boss_krosh_firehand : public ScriptedAI
             me->GetMotionMaster()->MoveChase(who, 25.0f);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetInCombatWithZone();
         instance->SetBossState(DATA_MAULGAR, IN_PROGRESS);
 
-        events.ScheduleEvent(EVENT_ADD_ABILITY1, 1s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY2, 5s);
-        events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+        events.ScheduleEvent(EVENT_ADD_ABILITY1, 1500ms); //spellshield
+        events.ScheduleEvent(EVENT_ADD_ABILITY2, 3500ms); //greater fireball
+        events.ScheduleEvent(EVENT_ADD_ABILITY3, 8s); //blast wave (needs to check for players in range)
     }
 
     void JustDied(Unit* /*killer*/) override
@@ -439,16 +441,19 @@ struct boss_krosh_firehand : public ScriptedAI
         switch (events.ExecuteEvent())
         {
             case EVENT_ADD_ABILITY1:
-                me->CastSpell(me->GetVictim(), SPELL_GREATER_FIREBALL, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY1, 3500ms);
+                DoCastSelf(SPELL_SPELLSHIELD);
+                events.ScheduleEvent(EVENT_ADD_ABILITY1, 30s);
                 break;
             case EVENT_ADD_ABILITY2:
-                me->CastSpell(me, SPELL_SPELLSHIELD, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY2, 40s);
+                DoCastVictim(SPELL_GREATER_FIREBALL);
+                events.ScheduleEvent(EVENT_ADD_ABILITY2, 1s);
                 break;
             case EVENT_ADD_ABILITY3:
-                me->CastSpell(me, SPELL_BLAST_WAVE, false);
-                events.ScheduleEvent(EVENT_ADD_ABILITY3, 20s);
+                if (me->SelectNearestPlayer(15.0f))
+                {
+                     DoCastAOE(SPELL_BLAST_WAVE);
+                }
+                events.ScheduleEvent(EVENT_ADD_ABILITY3, 8s);
                 break;
         }
 

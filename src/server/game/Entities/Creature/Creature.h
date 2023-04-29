@@ -91,7 +91,7 @@ public:
     [[nodiscard]] bool HasReactState(ReactStates state) const { return (m_reactState == state); }
     void InitializeReactState();
 
-    ///// TODO RENAME THIS!!!!!
+    ///// @todo RENAME THIS!!!!!
     bool isCanInteractWithBattleMaster(Player* player, bool msg) const;
     bool isCanTrainingAndResetTalentsOf(Player* player) const;
     [[nodiscard]] bool IsValidTrainerForPlayer(Player* player, uint32* npcFlags = nullptr) const;
@@ -391,6 +391,12 @@ public:
     void SetAssistanceTimer(uint32 value) { m_assistanceTimer = value; }
 
     void ModifyThreatPercentTemp(Unit* victim, int32 percent, Milliseconds duration);
+
+    /**
+     * @brief Helper to resume chasing current victim.
+     *
+     * */
+    void ResumeChasingVictim() { GetMotionMaster()->MoveChase(GetVictim()); };
 
     std::string GetDebugInfo() const override;
 

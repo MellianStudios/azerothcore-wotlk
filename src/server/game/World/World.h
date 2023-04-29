@@ -28,6 +28,7 @@
 #include "QueryResult.h"
 #include "SharedDefines.h"
 #include "Timer.h"
+#include "Unit.h"
 #include <atomic>
 #include <list>
 #include <map>
@@ -75,6 +76,7 @@ enum WorldTimers
     WUPDATE_PINGDB,
     WUPDATE_5_SECS,
     WUPDATE_WHO_LIST,
+    WUPDATE_DELAYED_DAMAGES,
     WUPDATE_COUNT
 };
 
@@ -146,8 +148,6 @@ enum WorldStates
     WS_DAILY_CALENDAR_DELETION_OLD_EVENTS_TIME = 20008                      // Next daily calendar deletions of old events time
 };
 
-#define WORLD_SLEEP_CONST 10
-
 // xinef: petitions storage
 struct PetitionData
 {
@@ -160,6 +160,8 @@ public:
     World();
     ~World() override;
 
+    std::list<DelayedDamage> _delayedDamages;
+
     static World* instance();
 
     static uint32 m_worldLoopCounter;
@@ -168,7 +170,6 @@ public:
     [[nodiscard]] WorldSession* FindOfflineSession(uint32 id) const override;
     [[nodiscard]] WorldSession* FindOfflineSessionForCharacterGUID(ObjectGuid::LowType guidLow) const override;
     void AddSession(WorldSession* s) override;
-    void SendAutoBroadcast() override;
     bool KickSession(uint32 id) override;
     /// Get the number of current active sessions
     void UpdateMaxSessionCounters() override;
@@ -346,7 +347,7 @@ public:
     void LoadDBVersion() override;
     [[nodiscard]] char const* GetDBVersion() const override { return _dbVersion.c_str(); }
 
-    void LoadAutobroadcasts() override;
+    void LoadMotd() override;
 
     void UpdateAreaDependentAuras() override;
 
@@ -358,6 +359,10 @@ public:
     void SetRealmName(std::string name) override { _realmName = name; } // pussywizard
 
     void RemoveOldCorpses() override;
+
+    void AddDelayedDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss) override;
+
+    void ProcessDelayedDamages();
 
     // AIO prefix configured in worldserver.conf
     [[nodiscard]] std::string GetAIOPrefix() const override { return m_aioprefix; }
@@ -495,12 +500,6 @@ private:
 
     // used versions
     std::string _dbVersion;
-
-    typedef std::map<uint8, std::string> AutobroadcastsMap;
-    AutobroadcastsMap _autobroadcasts;
-
-    typedef std::map<uint8, uint8> AutobroadcastsWeightMap;
-    AutobroadcastsWeightMap _autobroadcastsWeights;
 
     void ProcessQueryCallbacks();
     QueryCallbackProcessor _queryProcessor;
