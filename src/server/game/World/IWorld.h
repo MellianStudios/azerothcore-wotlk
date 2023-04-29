@@ -24,15 +24,17 @@
 #include "ObjectGuid.h"
 #include "QueryResult.h"
 #include "SharedDefines.h"
+#include "Unit.h"
 #include <atomic>
 #include <list>
 #include <map>
 #include <set>
 #include <unordered_map>
 
+class IWorld;
+class Player;
 class WorldPacket;
 class WorldSession;
-class Player;
 
 /// Storage class for commands issued for delayed execution
 struct AC_GAME_API CliCommandHolder
@@ -138,6 +140,7 @@ enum WorldBoolConfigs
     CONFIG_AUTOBROADCAST,
     CONFIG_ALLOW_TICKETS,
     CONFIG_DELETE_CHARACTER_TICKET_TRACE,
+    CONFIG_DBC_ENFORCE_ITEM_ATTRIBUTES,
     CONFIG_PRESERVE_CUSTOM_CHANNELS,
     CONFIG_PDUMP_NO_PATHS,
     CONFIG_PDUMP_NO_OVERWRITE,
@@ -179,6 +182,9 @@ enum WorldBoolConfigs
     CONFIG_OBJECT_SPARKLES,
     CONFIG_LOW_LEVEL_REGEN_BOOST,
     CONFIG_OBJECT_QUEST_MARKERS,
+    CONFIG_STRICT_NAMES_RESERVED,
+    CONFIG_STRICT_NAMES_PROFANITY,
+    CONFIG_ALLOWS_RANK_MOD_FOR_PET_HEALTH,
     BOOL_CONFIG_VALUE_COUNT
 };
 
@@ -512,12 +518,14 @@ enum Rates
 class IWorld
 {
 public:
+    std::list<DelayedDamage> _delayedDamages;
+
     virtual ~IWorld() = default;
     [[nodiscard]] virtual WorldSession* FindSession(uint32 id) const = 0;
     [[nodiscard]] virtual WorldSession* FindOfflineSession(uint32 id) const = 0;
     [[nodiscard]] virtual WorldSession* FindOfflineSessionForCharacterGUID(ObjectGuid::LowType guidLow) const = 0;
+    virtual void AddDelayedDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss);
     virtual void AddSession(WorldSession* s) = 0;
-    virtual void SendAutoBroadcast() = 0;
     virtual bool KickSession(uint32 id) = 0;
     virtual void UpdateMaxSessionCounters() = 0;
     [[nodiscard]] virtual const SessionMap& GetAllSessions() const = 0;
@@ -593,7 +601,7 @@ public:
     [[nodiscard]] virtual LocaleConstant GetAvailableDbcLocale(LocaleConstant locale) const = 0;
     virtual void LoadDBVersion() = 0;
     [[nodiscard]] virtual char const* GetDBVersion() const = 0;
-    virtual void LoadAutobroadcasts() = 0;
+    virtual void LoadMotd() = 0;
     virtual void UpdateAreaDependentAuras() = 0;
     [[nodiscard]] virtual uint32 GetCleaningFlags() const = 0;
     virtual void   SetCleaningFlags(uint32 flags) = 0;
