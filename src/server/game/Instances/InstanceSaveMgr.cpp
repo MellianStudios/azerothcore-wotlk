@@ -259,6 +259,8 @@ void InstanceSaveMgr::DeleteInstanceSavedData(uint32 instanceId)
 
 void InstanceSaveMgr::LoadInstances()
 {
+    sScriptMgr->OnBeforeClearExpiredInstancesOnLoadInstances();
+
     uint32 oldMSTime = getMSTime();
 
     // Delete character_instance for non-existent character
