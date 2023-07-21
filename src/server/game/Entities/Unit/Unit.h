@@ -2608,6 +2608,13 @@ private:
     uint32 _lastExtraAttackSpell;
     std::unordered_map<ObjectGuid /*guid*/, uint32 /*count*/> extraAttacksTargets;
     ObjectGuid _lastDamagedTargetGuid;
+
+public:
+    std::chrono::time_point<std::chrono::steady_clock> m_encounter_log_last_update;
+    float m_encounter_log_last_position_x;
+    float m_encounter_log_last_position_y;
+    float m_encounter_log_last_position_z;
+    float m_encounter_log_last_position_o;
 };
 
 namespace Acore
