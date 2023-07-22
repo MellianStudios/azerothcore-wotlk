@@ -221,3 +221,17 @@ void ScriptMgr::OnAuraApplicationClientUpdate(Unit *target, Aura *aura, bool rem
         script->OnAuraApplicationClientUpdate(target, aura, remove);
     });
 }
+
+void ScriptMgr::OnBeforeClearExpiredInstancesOnLoadInstances()
+{
+    ExecuteScript<GlobalScript>([&](GlobalScript *script) {
+        script->OnBeforeClearExpiredInstancesOnLoadInstances();
+    });
+}
+
+void ScriptMgr::OnChangeUpdateData(Object *object, uint16 index, uint64 value)
+{
+    ExecuteScript<GlobalScript>([&](GlobalScript *script) {
+        script->OnChangeUpdateData(object, index, value);
+    });
+}

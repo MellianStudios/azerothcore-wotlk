@@ -473,7 +473,7 @@ public:
     virtual void OnUnitEnterCombat(Unit* /*unit*/, Unit* /*victim*/) { }
     virtual void OnUnitDeath(Unit* /*unit*/, Unit* /*killer*/) { }
 
-    virtual void OnDealMeleeDamage(CalcDamageInfo */*calcDamageInfo*/, DamageInfo */*damageInfo*/, uint32 /*overkill*/)
+    virtual void OnDealMeleeDamage(CalcDamageInfo * /*calcDamageInfo*/, DamageInfo * /*damageInfo*/, uint32 /*overkill*/)
     {}
 
     virtual void OnSendSpellNonMeleeDamageLog(SpellNonMeleeDamage * /*log*/)
@@ -1695,6 +1695,12 @@ public:
 
     virtual void OnAuraApplicationClientUpdate(Unit */*target*/, Aura */*aura*/, bool /*remove*/)
     {}
+
+    virtual void OnBeforeClearExpiredInstancesOnLoadInstances()
+    {}
+
+    virtual void OnChangeUpdateData(Object * /*object*/, uint16 /*index*/, uint64 /*value*/)
+    {}
 };
 
 class BGScript : public ScriptObject
@@ -2543,6 +2549,8 @@ public: /* GlobalScript */
     void OnSpellSendSpellGo(Spell *spell);
 
     void OnAuraApplicationClientUpdate(Unit *target, Aura *aura, bool remove);
+    void OnBeforeClearExpiredInstancesOnLoadInstances();
+    void OnChangeUpdateData(Object *object, uint16 index, uint64 value);
 
 public: /* Scheduled scripts */
     uint32 IncreaseScheduledScriptsCount() { return ++_scheduledScripts; }

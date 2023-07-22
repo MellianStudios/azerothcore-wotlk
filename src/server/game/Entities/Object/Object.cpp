@@ -657,6 +657,8 @@ void Object::SetUInt32Value(uint16 index, uint32 value)
         _changesMask.SetBit(index);
 
         AddToObjectUpdateIfNeeded();
+
+        sScriptMgr->OnChangeUpdateData(this, index, value);
     }
 }
 
@@ -666,6 +668,10 @@ void Object::UpdateUInt32Value(uint16 index, uint32 value)
 
     m_uint32Values[index] = value;
     _changesMask.SetBit(index);
+
+    if (m_uint32Values[index] != value) {
+        sScriptMgr->OnChangeUpdateData(this, index, value);
+    }
 }
 
 void Object::SetUInt64Value(uint16 index, uint64 value)
@@ -680,6 +686,8 @@ void Object::SetUInt64Value(uint16 index, uint64 value)
         _changesMask.SetBit(index + 1);
 
         AddToObjectUpdateIfNeeded();
+
+        sScriptMgr->OnChangeUpdateData(this, index, value);
     }
 }
 
