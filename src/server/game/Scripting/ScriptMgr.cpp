@@ -314,13 +314,6 @@ UnitScript::UnitScript(const char* name, bool addToScripts)
         ScriptRegistry<UnitScript>::AddScript(this);
 }
 
-ThreatScript::ThreatScript(const char *name, bool addToScripts) : ScriptObject(name)
-{
-    if (addToScripts) {
-        ScriptRegistry<ThreatScript>::AddScript(this);
-    }
-}
-
 MovementHandlerScript::MovementHandlerScript(const char* name)
     : ScriptObject(name)
 {

@@ -324,8 +324,6 @@ namespace Acore::Impl::ChatCommands
 
     if (cmd)
     { /* if we matched a command at some point, invoke it */
-        sScriptMgr->OnExecuteCommand(handler, cmd->_name, std::string(oldTail));
-
         handler.SetSentErrorMessage(false);
         if (cmd->IsInvokerVisible(handler) && cmd->_invoker(&handler, oldTail))
         { /* invocation succeeded, log this */

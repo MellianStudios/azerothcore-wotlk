@@ -1618,13 +1618,6 @@ void ScriptMgr::OnQuestAbandon(Player* player, uint32 questId)
     });
 }
 
-void ScriptMgr::OnPlayerResetsInstances(Player *player, uint8 method, bool isRaid)
-{
-    ExecuteScript<PlayerScript>([&](PlayerScript *script) {
-        script->OnPlayerResetsInstances(player, method, isRaid);
-    });
-}
-
 // Player anti cheat
 void ScriptMgr::AnticheatSetSkipOnePacketForASH(Player* player, bool apply)
 {
