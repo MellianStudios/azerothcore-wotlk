@@ -22,7 +22,6 @@
 #include "CharacterPackets.h"
 #include "Chat.h"
 #include "Common.h"
-#include "CreatureAI.h"
 #include "DBCEnums.h"
 #include "DatabaseEnv.h"
 #include "GameObjectAI.h"
@@ -30,7 +29,6 @@
 #include "GossipDef.h"
 #include "Group.h"
 #include "GuildMgr.h"
-#include "InstanceScript.h"
 #include "Language.h"
 #include "Log.h"
 #include "LootMgr.h"
@@ -71,7 +69,7 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
     // creatures can kill players
     // so if the server is lagging enough the player can
     // release spirit after he's killed but before he is updated
-    if (GetPlayer()->getDeathState() == JUST_DIED)
+    if (GetPlayer()->getDeathState() == DeathState::JustDied)
     {
         LOG_DEBUG("network", "HandleRepopRequestOpcode: got request after player {} ({}) was killed and before he was updated",
             GetPlayer()->GetName(), GetPlayer()->GetGUID().ToString());
@@ -716,6 +714,27 @@ void WorldSession::SendAreaTriggerMessage(const char* Text, ...)
     data << length;
     data << szStr;
     SendPacket(&data);
+}
+
+void WorldSession::SendAreaTriggerMessage(uint32 entry, ...)
+{
+    char const* format = GetAcoreString(entry);
+    if (format)
+    {
+        va_list ap;
+        char szStr[1024];
+        szStr[0] = '\0';
+
+        va_start(ap, entry);
+        vsnprintf(szStr, 1024, format, ap);
+        va_end(ap);
+
+        uint32 length = strlen(szStr) + 1;
+        WorldPacket data(SMSG_AREA_TRIGGER_MESSAGE, 4 + length);
+        data << length;
+        data << szStr;
+        SendPacket(&data);
+    }
 }
 
 void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)

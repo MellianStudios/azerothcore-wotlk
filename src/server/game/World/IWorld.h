@@ -24,7 +24,6 @@
 #include "ObjectGuid.h"
 #include "QueryResult.h"
 #include "SharedDefines.h"
-#include "Unit.h"
 #include "smallfolk.h"
 #include "AIOMsg.h"
 
@@ -35,10 +34,9 @@
 #include <unordered_map>
 #include <utility>
 
-class IWorld;
-class Player;
 class WorldPacket;
 class WorldSession;
+class Player;
 
 struct AIOAddon
 {
@@ -92,6 +90,7 @@ enum WorldBoolConfigs
     CONFIG_ADDON_CHANNEL,
     CONFIG_ALLOW_PLAYER_COMMANDS,
     CONFIG_CLEAN_CHARACTER_DB,
+    CONFIG_GRID_UNLOAD,
     CONFIG_STATS_SAVE_ONLY_ON_LOGOUT,
     CONFIG_ALLOW_TWO_SIDE_ACCOUNTS,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_CALENDAR,
@@ -99,6 +98,7 @@ enum WorldBoolConfigs
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHANNEL,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_GUILD,
+    CONFIG_ALLOW_TWO_SIDE_INTERACTION_ARENA,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION,
     CONFIG_ALLOW_TWO_SIDE_INTERACTION_MAIL,
     CONFIG_ALLOW_TWO_SIDE_WHO_LIST,
@@ -229,6 +229,7 @@ enum WorldFloatConfigs
 enum WorldIntConfigs
 {
     CONFIG_COMPRESSION = 0,
+    CONFIG_INTERVAL_GRIDCLEAN,
     CONFIG_INTERVAL_MAPUPDATE,
     CONFIG_INTERVAL_CHANGEWEATHER,
     CONFIG_INTERVAL_DISCONNECT_TOLERANCE,
@@ -347,8 +348,10 @@ enum WorldIntConfigs
     CONFIG_ARENA_GAMES_REQUIRED,
     CONFIG_ARENA_SEASON_ID,
     CONFIG_ARENA_START_RATING,
+    CONFIG_LEGACY_ARENA_POINTS_CALC,
     CONFIG_ARENA_START_PERSONAL_RATING,
     CONFIG_ARENA_START_MATCHMAKER_RATING,
+    CONFIG_ARENA_QUEUE_ANNOUNCER_DETAIL,
     CONFIG_HONOR_AFTER_DUEL,
     CONFIG_PVP_TOKEN_MAP_TYPE,
     CONFIG_PVP_TOKEN_ID,
@@ -435,6 +438,7 @@ enum WorldIntConfigs
     CONFIG_LFG_KICK_PREVENTION_TIMER,
     CONFIG_CHANGE_FACTION_MAX_MONEY,
     CONFIG_WATER_BREATH_TIMER,
+    CONFIG_AUCTION_HOUSE_SEARCH_TIMEOUT,
     CONFIG_AIO_MAXPARTS,
     INT_CONFIG_VALUE_COUNT
 };
@@ -459,8 +463,8 @@ enum Rates
     RATE_DROP_ITEM_LEGENDARY,
     RATE_DROP_ITEM_ARTIFACT,
     RATE_DROP_ITEM_REFERENCED,
-
     RATE_DROP_ITEM_REFERENCED_AMOUNT,
+    RATE_DROP_ITEM_GROUP_AMOUNT,
     RATE_SELLVALUE_ITEM_POOR,
     RATE_SELLVALUE_ITEM_NORMAL,
     RATE_SELLVALUE_ITEM_UNCOMMON,
@@ -524,7 +528,6 @@ enum Rates
     RATE_TALENT,
     RATE_CORPSE_DECAY_LOOTED,
     RATE_INSTANCE_RESET_TIME,
-    RATE_TARGET_POS_RECALCULATION_RANGE,
     RATE_DURABILITY_LOSS_ON_DEATH,
     RATE_DURABILITY_LOSS_DAMAGE,
     RATE_DURABILITY_LOSS_PARRY,
@@ -539,13 +542,10 @@ enum Rates
 class IWorld
 {
 public:
-    std::list<DelayedDamage> _delayedDamages;
-
     virtual ~IWorld() = default;
     [[nodiscard]] virtual WorldSession* FindSession(uint32 id) const = 0;
     [[nodiscard]] virtual WorldSession* FindOfflineSession(uint32 id) const = 0;
     [[nodiscard]] virtual WorldSession* FindOfflineSessionForCharacterGUID(ObjectGuid::LowType guidLow) const = 0;
-    virtual void AddDelayedDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellInfo const* spellProto, bool durabilityLoss);
     virtual void AddSession(WorldSession* s) = 0;
     virtual bool KickSession(uint32 id) = 0;
     virtual void UpdateMaxSessionCounters() = 0;
@@ -622,7 +622,6 @@ public:
     [[nodiscard]] virtual LocaleConstant GetAvailableDbcLocale(LocaleConstant locale) const = 0;
     virtual void LoadDBVersion() = 0;
     [[nodiscard]] virtual char const* GetDBVersion() const = 0;
-    virtual void LoadMotd() = 0;
     virtual void UpdateAreaDependentAuras() = 0;
     [[nodiscard]] virtual uint32 GetCleaningFlags() const = 0;
     virtual void   SetCleaningFlags(uint32 flags) = 0;

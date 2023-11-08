@@ -29,7 +29,6 @@
 #include "Timer.h"
 #include "Tokenize.h"
 #include <chrono>
-#include <sstream>
 
 Log::Log() : AppenderId(0), highestLogLevel(LOG_LEVEL_FATAL)
 {
@@ -404,6 +403,4 @@ void Log::LoadFromConfig()
 
     ReadAppendersFromConfig();
     ReadLoggersFromConfig();
-
-    _debugLogMask = DebugLogFilters(sConfigMgr->GetOption<uint32>("DebugLogMask", LOG_FILTER_NONE, false));
 }

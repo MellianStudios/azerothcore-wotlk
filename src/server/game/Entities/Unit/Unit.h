@@ -311,13 +311,13 @@ enum BaseModType
 
 #define MOD_END (PCT_MOD+1)
 
-enum DeathState
+enum class DeathState : uint8
 {
-    ALIVE       = 0,
-    JUST_DIED   = 1,
-    CORPSE      = 2,
-    DEAD        = 3,
-    JUST_RESPAWNED = 4,
+    Alive         = 0,
+    JustDied      = 1,
+    Corpse        = 2,
+    Dead          = 3,
+    JustRespawned = 4,
 };
 
 enum UnitState
@@ -756,18 +756,6 @@ struct CleanDamage
 
 struct CalcDamageInfo;
 struct SpellNonMeleeDamage;
-
-struct DelayedDamage
-{
-    Unit* attacker;
-    Unit* victim;
-    uint32 damage;
-    CleanDamage const* cleanDamage;
-    DamageEffectType damagetype;
-    SpellSchoolMask damageSchoolMask;
-    SpellInfo const* spellProto;
-    bool durabilityLoss;
-};
 
 class DamageInfo
 {
@@ -1570,7 +1558,7 @@ public:
 
     uint16 GetMaxSkillValueForLevel(Unit const* target = nullptr) const { return (target ? getLevelForTarget(target) : GetLevel()) * 5; }
     static void DealDamageMods(Unit const* victim, uint32& damage, uint32* absorb);
-    static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true, bool allowGM = false, Spell const* spell = nullptr, bool delayed = false);
+    static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, CleanDamage const* cleanDamage = nullptr, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true, bool allowGM = false, Spell const* spell = nullptr);
     static void Kill(Unit* killer, Unit* victim, bool durabilityLoss = true, WeaponAttackType attackType = BASE_ATTACK, SpellInfo const* spellProto = nullptr, Spell const* spell = nullptr);
     void KillSelf(bool durabilityLoss = true, WeaponAttackType attackType = BASE_ATTACK, SpellInfo const* spellProto = nullptr, Spell const* spell = nullptr) { Kill(this, this, durabilityLoss, attackType, spellProto, spell); };
     static int32 DealHeal(Unit* healer, Unit* victim, uint32 addhealth);
@@ -1829,9 +1817,9 @@ public:
 
     void BuildHeartBeatMsg(WorldPacket* data) const;
 
-    [[nodiscard]] bool IsAlive() const { return (m_deathState == ALIVE); };
-    [[nodiscard]] bool isDying() const { return (m_deathState == JUST_DIED); };
-    [[nodiscard]] bool isDead() const { return (m_deathState == DEAD || m_deathState == CORPSE); };
+    [[nodiscard]] bool IsAlive() const { return (m_deathState == DeathState::Alive); };
+    [[nodiscard]] bool isDying() const { return (m_deathState == DeathState::JustDied); };
+    [[nodiscard]] bool isDead() const { return (m_deathState == DeathState::Dead || m_deathState == DeathState::Corpse); };
     DeathState getDeathState() { return m_deathState; };
     virtual void setDeathState(DeathState s, bool despawn = false);           // overwrited in Creature/Player/Pet
 
@@ -2155,7 +2143,7 @@ public:
     // common function for visibility checks for player/creatures with detection code
     [[nodiscard]] uint32 GetPhaseByAuras() const;
     void SetPhaseMask(uint32 newPhaseMask, bool update) override;// overwrite WorldObject::SetPhaseMask
-    void UpdateObjectVisibility(bool forced = true, bool fromUpdate = false) override;
+    void UpdateObjectVisibility(bool forced = true) override;
 
     SpellImmuneList m_spellImmune[MAX_SPELL_IMMUNITY];
     uint32 m_lastSanctuaryTime;
@@ -2429,14 +2417,6 @@ public:
     void AddPointedBy(SafeUnitPointer* sup) { SafeUnitPointerSet.insert(sup); }
     void RemovePointedBy(SafeUnitPointer* sup) { SafeUnitPointerSet.erase(sup); }
     static void HandleSafeUnitPointersOnDelete(Unit* thisUnit);
-    // Relocation Nofier optimization
-    Position m_last_notify_position;
-    uint32 m_last_notify_mstime;
-    uint16 m_delayed_unit_relocation_timer;
-    uint16 m_delayed_unit_ai_notify_timer;
-    bool bRequestForcedVisibilityUpdate;
-    void ExecuteDelayedUnitRelocationEvent();
-    void ExecuteDelayedUnitAINotifyEvent();
 
     // cooldowns
     [[nodiscard]] virtual bool HasSpellCooldown(uint32 /*spell_id*/) const { return false; }
@@ -2595,7 +2575,7 @@ private:
     uint32 m_state;                                     // Even derived shouldn't modify
     uint32 m_CombatTimer;
     uint32 m_lastManaUse;                               // msecs
-    //TimeTrackerSmall m_movesplineTimer;
+    TimeTrackerSmall m_splineSyncTimer;
 
     Diminishing m_Diminishing;
     // Manage all Units that are threatened by us
