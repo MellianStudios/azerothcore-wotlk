@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "UnitScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 
@@ -320,3 +321,12 @@ void ScriptMgr::OnSendPeriodicAuraLog(Unit *victim, SpellPeriodicAuraLogInfo *pI
         script->OnSendPeriodicAuraLog(victim, pInfo);
     });
 }
+
+UnitScript::UnitScript(const char* name, bool addToScripts) :
+    ScriptObject(name)
+{
+    if (addToScripts)
+        ScriptRegistry<UnitScript>::AddScript(this);
+}
+
+template class AC_GAME_API ScriptRegistry<UnitScript>;

@@ -23,16 +23,14 @@
  EndScriptData */
 
 #include "Chat.h"
-#include "Config.h"
+#include "CommandScript.h"
 #include "GameTime.h"
 #include "GitRevision.h"
-#include "Language.h"
 #include "ModuleMgr.h"
+#include "MotdMgr.h"
 #include "MySQLThreading.h"
 #include "Player.h"
 #include "Realm.h"
-#include "ScriptMgr.h"
-#include "ServerMotd.h"
 #include "StringConvert.h"
 #include "UpdateTime.h"
 #include "VMapFactory.h"
@@ -284,7 +282,7 @@ public:
     // Display the 'Message of the day' for the realm
     static bool HandleServerMotdCommand(ChatHandler* handler)
     {
-        handler->PSendSysMessage(LANG_MOTD_CURRENT, Motd::GetMotd());
+        handler->PSendSysMessage(LANG_MOTD_CURRENT, sMotdMgr->GetMotd());
         return true;
     }
 
@@ -307,8 +305,7 @@ public:
 
         if (Acore::StringTo<int32>(time).value_or(0) < 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -333,8 +330,7 @@ public:
 
         if (delay <= 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -362,8 +358,7 @@ public:
 
         if (Acore::StringTo<int32>(time).value_or(0) < 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -388,8 +383,7 @@ public:
 
         if (delay <= 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -417,8 +411,7 @@ public:
 
         if (Acore::StringTo<int32>(time).value_or(0) < 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -443,8 +436,7 @@ public:
 
         if (delay <= 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -472,8 +464,7 @@ public:
 
         if (Acore::StringTo<int32>(time).value_or(0) < 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -498,8 +489,7 @@ public:
 
         if (delay <= 0)
         {
-            handler->SendSysMessage(LANG_BAD_VALUE);
-            handler->SetSentErrorMessage(true);
+            handler->SendErrorMessage(LANG_BAD_VALUE);
             return false;
         }
 
@@ -556,7 +546,7 @@ public:
         trans->Append(stmt);
         LoginDatabase.CommitTransaction(trans);
 
-        sWorld->LoadMotd();
+        sMotdMgr->LoadMotd();
         handler->PSendSysMessage(LANG_MOTD_NEW, Acore::StringTo<int32>(realmId).value(), strMotd);
         return true;
     }
@@ -577,8 +567,7 @@ public:
             return true;
         }
 
-        handler->SendSysMessage(LANG_USE_BOL);
-        handler->SetSentErrorMessage(true);
+        handler->SendErrorMessage(LANG_USE_BOL);
         return false;
     }
 
