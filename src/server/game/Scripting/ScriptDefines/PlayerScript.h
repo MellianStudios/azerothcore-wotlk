@@ -19,6 +19,7 @@
 #define SCRIPT_OBJECT_PLAYER_SCRIPT_H_
 
 #include "ScriptObject.h"
+#include "Player.h"
 
 // TODO to remove
 #include "AchievementMgr.h"
@@ -564,6 +565,9 @@ public:
      * @param player Contains information about the Player
      */
     virtual void OnAfterCreatureLootMoney(Player* /*player*/) { }
+
+    virtual void OnEnvironmentalDamage(Player * /*player*/, EnviromentalDamage /*type*/, uint32 /*damage*/)
+    {}
 };
 
 #endif

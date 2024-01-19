@@ -84,6 +84,36 @@ public:
     virtual void OnUnitEnterEvadeMode(Unit* /*unit*/, uint8 /*evadeReason*/) { }
     virtual void OnUnitEnterCombat(Unit* /*unit*/, Unit* /*victim*/) { }
     virtual void OnUnitDeath(Unit* /*unit*/, Unit* /*killer*/) { }
+
+    virtual void OnDealMeleeDamage(CalcDamageInfo * /*calcDamageInfo*/, DamageInfo * /*damageInfo*/, uint32 /*overkill*/)
+    {}
+
+    virtual void OnSendSpellNonMeleeDamageLog(SpellNonMeleeDamage * /*log*/)
+    {}
+
+    virtual void OnSendAttackStateUpdate(CalcDamageInfo * /*damageInfo*/, int32 /*overkill*/)
+    {}
+
+    virtual void OnSendSpellDamageImmune(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellId*/)
+    {}
+
+    virtual void OnSendSpellMiss(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellID*/, SpellMissInfo /*missInfo*/)
+    {}
+
+    virtual void OnSendSpellDamageResist(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellId*/)
+    {}
+
+    virtual void OnSendSpellNonMeleeReflectLog(SpellNonMeleeDamage * /*log*/, Unit * /*attacker*/)
+    {}
+
+    virtual void OnSendHealSpellLog(HealInfo const & /*healInfo*/, bool /*critical*/)
+    {}
+
+    virtual void OnSendEnergizeSpellLog(Unit * /*attacker*/, Unit * /*victim*/, uint32 /*spellID*/, uint32 /*damage*/, Powers /*powerType*/)
+    {}
+
+    virtual void OnSendPeriodicAuraLog(Unit * /*victim*/, SpellPeriodicAuraLogInfo * /*pInfo*/)
+    {}
 };
 
 #endif

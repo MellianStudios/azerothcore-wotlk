@@ -75,6 +75,20 @@ public:
 
     // Called when a gameobject is created by an instance
     virtual void AfterInstanceGameObjectCreate(Map* /*instance*/, GameObject* /*go*/) { }
+
+    // currently unused
+    virtual void OnSpellSendSpellGo(Spell */*spell*/)
+    {}
+
+    virtual void OnAuraApplicationClientUpdate(Unit */*target*/, Aura */*aura*/, bool /*remove*/)
+    {}
+
+    // currently unused
+    virtual void OnBeforeClearExpiredInstancesOnLoadInstances()
+    {}
+
+    virtual void OnChangeUpdateData(Object * /*object*/, uint16 /*index*/, uint64 /*value*/)
+    {}
 };
 
 #endif
