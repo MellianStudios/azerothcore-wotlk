@@ -354,6 +354,8 @@ public:
 
     void RemoveOldCorpses() override;
 
+    void DoForAllOnlinePlayers(std::function<void(Player*)> exec) override;
+
     // AIO prefix configured in worldserver.conf
     [[nodiscard]] std::string GetAIOPrefix() const override { return m_aioprefix; }
 
