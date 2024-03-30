@@ -23,6 +23,7 @@
 
 // TODO to remove
 #include "AchievementMgr.h"
+#include "KillRewarder.h"
 
 class PlayerScript : public ScriptObject
 {
@@ -315,7 +316,7 @@ public:
 
     virtual void PetitionShowList(Player* /*player*/, Creature* /*creature*/, uint32& /*CharterEntry*/, uint32& /*CharterDispayID*/, uint32& /*CharterCost*/) { }
 
-    virtual void OnRewardKillRewarder(Player* /*player*/, bool /*isDungeon*/, float& /*rate*/) { }
+    virtual void OnRewardKillRewarder(Player* /*player*/, KillRewarder* /*rewarder*/, bool /*isDungeon*/, float& /*rate*/) { }
 
     [[nodiscard]] virtual bool CanGiveMailRewardAtGiveLevel(Player* /*player*/, uint8 /*level*/) { return true; }
 
@@ -323,7 +324,11 @@ public:
 
     [[nodiscard]] virtual bool CanRepopAtGraveyard(Player* /*player*/) { return true; }
 
+    [[nodiscard]] virtual Optional<bool> OnPlayerIsClass(Player const* /*player*/, Classes /*playerClass*/, ClassContext /*context*/) { return std::nullopt; }
+
     virtual void OnGetMaxSkillValue(Player* /*player*/, uint32 /*skill*/, int32& /*result*/, bool /*IsPure*/) { }
+
+    [[nodiscard]] virtual bool OnPlayerHasActivePowerType(Player const* /*player*/, Powers /*power*/) { return false; }
 
     /**
      * @brief This hook called before gathering skill gain is applied to the character.
@@ -416,6 +421,16 @@ public:
     [[nodiscard]] virtual bool CanEnterMap(Player* /*player*/, MapEntry const* /*entry*/, InstanceTemplate const* /*instance*/, MapDifficulty const* /*mapDiff*/, bool /*loginCheck*/) { return true; }
 
     [[nodiscard]] virtual bool CanInitTrade(Player* /*player*/, Player* /*target*/) { return true; }
+
+    /**
+     * @brief This hook called just before finishing the handling of the action of a player setting an item in a trade slot
+     *
+     * @param player Contains information about the trade initiator Player
+     * @param tradedItem Contains information about the item set in the trade slot
+     *
+     * @return True if you want to continue setting the item in the trade slot, false if you want to cancel the trade
+     */
+    [[nodiscard]] virtual bool CanSetTradeItem(Player* /*player*/, Item* /*tradedItem*/, uint8 /*tradeSlot*/) { return true; }
 
     virtual void OnSetServerSideVisibility(Player* /*player*/, ServerSideVisibilityType& /*type*/, AccountTypes& /*sec*/) { }
 
