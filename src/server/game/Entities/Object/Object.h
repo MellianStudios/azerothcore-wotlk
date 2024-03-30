@@ -212,6 +212,11 @@ public:
 
     DataMap CustomData;
 
+    std::uint_fast32_t m_encounter_log_previous_max_health;
+    std::uint_fast32_t m_encounter_log_previous_health;
+    std::uint_fast32_t m_encounter_log_previous_max_power;
+    std::uint_fast32_t m_encounter_log_previous_power;
+
 protected:
     Object();
 

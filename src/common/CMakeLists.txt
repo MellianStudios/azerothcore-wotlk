@@ -73,6 +73,7 @@ target_link_libraries(common
     openssl
     threads
     jemalloc
+    nlohmann_json::nlohmann_json
     stdfs
     fmt)
 
