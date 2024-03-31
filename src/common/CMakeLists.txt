@@ -62,20 +62,42 @@ target_include_directories(common
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(common
-  PRIVATE
-    acore-core-interface
-  PUBLIC
-    boost
-    argon2
-    sfmt
-    utf8cpp
-    openssl
-    threads
-    jemalloc
-    nlohmann_json::nlohmann_json
-    stdfs
-    fmt)
+find_library(CASSANDRA_LIB cassandra)
+
+if (CASSANDRA_LIB)
+    target_link_libraries(common
+            PRIVATE
+            acore-core-interface
+            PUBLIC
+            boost
+            argon2
+            sfmt
+            utf8cpp
+            openssl
+            threads
+            jemalloc
+            nlohmann_json::nlohmann_json
+            ${CASSANDRA_LIB}
+            stdfs
+            fmt
+    )
+else ()
+    target_link_libraries(common
+            PRIVATE
+            acore-core-interface
+            PUBLIC
+            boost
+            argon2
+            sfmt
+            utf8cpp
+            openssl
+            threads
+            jemalloc
+            nlohmann_json::nlohmann_json
+            stdfs
+            fmt
+    )
+endif ()
 
 if (BUILD_APPLICATION_WORLDSERVER OR BUILD_TOOLS_MAPS)
   target_link_libraries(common
