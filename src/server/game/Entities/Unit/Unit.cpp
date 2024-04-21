@@ -268,6 +268,18 @@ SpellInfo const* ProcEventInfo::GetSpellInfo() const
     return nullptr;
 }
 
+SpellSchoolMask ProcEventInfo::GetSchoolMask() const
+{
+    if (_spell)
+        return _spell->GetSpellInfo()->GetSchoolMask();
+    if (_damageInfo)
+        return _damageInfo->GetSchoolMask();
+    if (_healInfo)
+        return _healInfo->GetSchoolMask();
+    return SPELL_SCHOOL_MASK_NONE;
+}
+
+
 // we can disable this warning for this since it only
 // causes undefined behavior when passed to the base class constructor
 #ifdef _MSC_VER

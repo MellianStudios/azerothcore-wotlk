@@ -18,6 +18,7 @@
 #include "CreatureScript.h"
 #include "ScriptedCreature.h"
 #include "SpellScript.h"
+#include "SpellScriptLoader.h"
 #include "hyjal.h"
 
 enum Spells
