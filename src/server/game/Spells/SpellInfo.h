@@ -247,8 +247,8 @@ private:
 class SpellEffectInfo
 {
     SpellInfo const* _spellInfo;
-    uint8 _effIndex;
 public:
+    uint8     EffectIndex;
     uint32    Effect;
     uint32    ApplyAuraName;
     uint32    Amplitude;
@@ -271,7 +271,7 @@ public:
     flag96    SpellClassMask;
     std::list<Condition*>* ImplicitTargetConditions;
 
-    SpellEffectInfo() : _spellInfo(nullptr), _effIndex(0), Effect(0), ApplyAuraName(0), Amplitude(0), DieSides(0),
+    SpellEffectInfo() : _spellInfo(nullptr), EffectIndex(0), Effect(0), ApplyAuraName(0), Amplitude(0), DieSides(0),
         RealPointsPerLevel(0), BasePoints(0), PointsPerComboPoint(0), ValueMultiplier(0), DamageMultiplier(0),
         BonusMultiplier(0), MiscValue(0), MiscValueB(0), Mechanic(MECHANIC_NONE), RadiusEntry(nullptr), ChainTarget(0),
         ItemType(0), TriggerSpell(0), ImplicitTargetConditions(nullptr) {}

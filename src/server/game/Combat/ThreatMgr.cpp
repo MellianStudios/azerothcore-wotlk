@@ -345,7 +345,7 @@ HostileReference* ThreatContainer::SelectNextVictim(Creature* attacker, HostileR
 
         // pussywizard: don't go to threat comparison if this ref is immune to damage or has aura breakable on damage (second choice target)
         // pussywizard: if this is the last entry on the threat list, then all targets are second choice, set bool to true and loop threat list again, ignoring this section
-        if (!noPriorityTargetFound && (target->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || target->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE) || target->HasAuraTypeWithCaster(SPELL_AURA_IGNORED, attacker->GetGUID())))
+        if (!noPriorityTargetFound && (target->IsImmunedToDamageOrSchool(attacker->GetMeleeDamageSchoolMask()) || target->HasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_TAKE_DAMAGE) || target->HasAuraTypeWithCaster(SPELL_AURA_MOD_DETAUNT, attacker->GetGUID())))
         {
             if (iter != lastRef)
             {

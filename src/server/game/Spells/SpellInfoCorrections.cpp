@@ -674,13 +674,6 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->AttributesEx3 |= SPELL_ATTR3_ALWAYS_HIT;
     });
 
-    // Cobra Strikes
-    ApplySpellFix({ 53257 }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->ProcCharges = 2;
-        spellInfo->StackAmount = 0;
-    });
-
     // Kill Command
     // Kill Command, Overpower
     ApplySpellFix({ 34027, 37529 }, [](SpellInfo* spellInfo)
@@ -1158,13 +1151,6 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Dispel = DISPEL_NONE;
         spellInfo->AttributesEx4 |= SPELL_ATTR4_CANNOT_BE_STOLEN;
         spellInfo->Effects[EFFECT_0].SpellClassMask = flag96(685904631, 1151040, 32);
-    });
-
-    // Fingers of Frost visual buff
-    ApplySpellFix({ 74396 }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->ProcCharges = 2;
-        spellInfo->StackAmount = 0;
     });
 
     // Glyph of blocking

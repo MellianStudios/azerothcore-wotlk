@@ -3966,7 +3966,7 @@ void Spell::_cast(bool skipCheck)
             hitMask |= PROC_HIT_NORMAL;
         }
 
-        m_originalCaster->ProcSkillsAndAuras(m_originalCaster, procAttacker, PROC_FLAG_NONE, PROC_SPELL_TYPE_MASK_ALL, PROC_SPELL_PHASE_CAST, hitMask, this, nullptr, nullptr);
+        m_originalCaster->ProcSkillsAndAuras(nullptr, procAttacker, PROC_FLAG_NONE, PROC_SPELL_TYPE_MASK_ALL, PROC_SPELL_PHASE_CAST, hitMask, this, nullptr, nullptr);
     }
 
     if (modOwner)

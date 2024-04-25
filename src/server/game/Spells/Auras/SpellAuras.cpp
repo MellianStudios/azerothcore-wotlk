@@ -2296,7 +2296,7 @@ uint8 Aura::GetProcEffectMask(AuraApplication* aurApp, ProcEventInfo& eventInfo,
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
         if (procEffectMask & (1 << i))
-            if ((procEntry->AttributesMask & (PROC_ATTR_DISABLE_EFF_0 << i)) || !GetEffect(i)->CheckEffectProc(aurApp, eventInfo))
+            if ((procEntry->DisableEffectsMask & (1u << i)) || !GetEffect(i)->CheckEffectProc(aurApp, eventInfo))
                 procEffectMask &= ~(1 << i);
     }
 
