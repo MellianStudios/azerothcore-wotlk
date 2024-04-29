@@ -325,7 +325,7 @@ std::array<SpellImplicitTargetInfo::StaticData, TOTAL_SPELL_TARGETS> SpellImplic
 SpellEffectInfo::SpellEffectInfo(SpellEntry const* spellEntry, SpellInfo const* spellInfo, uint8 effIndex)
 {
     _spellInfo = spellInfo;
-    _effIndex = effIndex;
+    EffectIndex = effIndex;
     Effect = spellEntry->Effect[effIndex];
     ApplyAuraName = spellEntry->EffectApplyAuraName[effIndex];
     Amplitude = spellEntry->EffectAmplitude[effIndex];
@@ -455,7 +455,7 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
             value += PointsPerComboPoint * comboPoints;
         }
 
-        value = caster->ApplyEffectModifiers(_spellInfo, _effIndex, value);
+        value = caster->ApplyEffectModifiers(_spellInfo, EffectIndex, value);
 
         // amount multiplication based on caster's level
         if (!caster->IsControlledByPlayer() &&
